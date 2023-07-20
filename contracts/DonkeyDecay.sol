@@ -24,7 +24,7 @@ contract DonkeyDecay is ERC721, ERC721URIStorage, Ownable {
 
     uint256 public constant MAX_SUPPLY = 10000;
     address public constant DESIGNATIED_INTIALIZER = 0xd240bc7905f8D32320937cd9aCC3e69084ec4658;
-
+    string public constant DEFAULT_BASE_URI = "https://dkdk.club/metadata/";
     constructor() ERC721("Donkey Decay", "DKDK") {
         _transferOwnership(DESIGNATIED_INTIALIZER);
         _treasury = payable(DESIGNATIED_INTIALIZER);
@@ -35,35 +35,39 @@ contract DonkeyDecay is ERC721, ERC721URIStorage, Ownable {
     function getLastMintBlock() public view returns (uint256) {
         return _lastMintBlock;
     }
-    function getElapsedPortion() public view returns (int256) {
+
+    function getElapsedPortion(uint256 blockNum) public view returns (int256) {
         int256 elapsedPortion;
-        if (getElapsedTime() > AUCTION_DURATION_BLOCKS) {
+        if (getElapsedTime(blockNum) > AUCTION_DURATION_BLOCKS) {
             elapsedPortion = 1e18;
         } else {
-            elapsedPortion = getElapsedTime().div(AUCTION_DURATION_BLOCKS);
+            elapsedPortion = getElapsedTime(blockNum).div(AUCTION_DURATION_BLOCKS);
         }
         return elapsedPortion;
     }
 
-    function getElapsedTime() public view returns (int256) {
-        return int256(block.number - _lastMintBlock);
+    function getElapsedTime(uint256 blockNum) public view returns (int256) {
+        return int256(blockNum - _lastMintBlock);
     }
 
     function currentPrice() external view returns (int256) {
-        return _currentPrice();
+        return _getPriceAtBlock(block.number);
     }
 
-    function _currentPrice() internal view returns (int256) {
+    function getPriceAtBlock(uint256 blockNum) external view returns (int256) {
+        return _getPriceAtBlock(blockNum);
+    }
+
+    function _getPriceAtBlock(uint256 blockNum) internal view returns (int256) {
         int256 base = FINAL_PRICE.div(INITIAL_PRICE);
-        return INITIAL_PRICE.mul(base.pow(getElapsedPortion()));
+        return INITIAL_PRICE.mul(base.pow(getElapsedPortion(blockNum)));
     }
 
     function _baseURI() internal view override returns (string memory) {
-        return bytes(_overrideBaseURI).length > 0 ? _overrideBaseURI : "https://dkdk.club/metadata/";
+        return bytes(_overrideBaseURI).length > 0 ? _overrideBaseURI : DEFAULT_BASE_URI;
     }
 
     // --- WRAPPER OF WRITE FUNCTIONS  --- //
-
     fallback() external payable {
         _safeMint(msg.sender);
     }
@@ -80,7 +84,7 @@ contract DonkeyDecay is ERC721, ERC721URIStorage, Ownable {
 
     function _safeMint(address to) internal {
         // assert the payment has enough value
-        uint256 price = uint256(_currentPrice());
+        uint256 price = uint256(_getPriceAtBlock(block.number));
         require(msg.value >= price, "Not enough value sent");
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();

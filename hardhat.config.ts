@@ -1,6 +1,6 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
-
+import "hardhat-gas-reporter"
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -10,6 +10,11 @@ const config: HardhatUserConfig = {
         enabled: true,
       },
     },
+  },
+  gasReporter: {
+    enabled: true,
+    currency: 'USD',
+    coinmarketcap: process.env.COINMARKETCAP_API_KEY || "",
   },
 };
 
