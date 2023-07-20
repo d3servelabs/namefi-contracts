@@ -1,8 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import {
-  loadFixture, mine
-} from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import { loadFixture, mine} from "@nomicfoundation/hardhat-network-helpers";
 
 describe("DonkeyDecay", function () {
   // deployFixture
@@ -10,10 +8,10 @@ describe("DonkeyDecay", function () {
     const ContractFactory = await ethers.getContractFactory("DonkeyDecay");
 
     const instance = await ContractFactory.deploy();
-    await instance.waitForDeployment();
+    await instance.deployed();
+    const signers = await ethers.getSigners();
     // signer 
-    const signer = (await ethers.getSigners())[0];
-    // await instance.safeMint(signer.address, { value: ethers.parseEther("10") });
+    const signer = signers[0];
     return { instance, signer };
   }
 
@@ -21,13 +19,10 @@ describe("DonkeyDecay", function () {
     const ContractFactory = await ethers.getContractFactory("DonkeyDecay");
 
     const instance = await ContractFactory.deploy();
-    await instance.waitForDeployment();
+    await instance.deployed();
 
     expect(await instance.name()).to.equal("Donkey Decay");
     expect(await instance.symbol()).to.equal("DKDK");
-    console.log(`Contract deployed to ${await instance.getAddress()}`);
-    // bytecode display
-    console.log(`Contract bytecode: ${ContractFactory.bytecode}`);
   });
 
   it("should set default URI", async function () {
@@ -42,28 +37,58 @@ describe("DonkeyDecay", function () {
 
     expect(await instance.getElapsedTime()).to.equal(0);
     expect(await instance.getElapsedPortion()).to.equal(0);
-    expect(await instance.currentPrice()).to.equal(ethers.parseEther("1"));
+    expect(await instance.currentPrice()).to.equal(ethers.utils.parseEther("1"));
 
     // mine 24 hours 
     await mine(24 * 60 * 60 / 12);
     expect(await instance.getElapsedTime()).to.equal(24 * 60 * 60 / 12);
-    expect(await instance.getElapsedPortion()).to.equal(ethers.toBigInt("1000000000000000000") / BigInt(3));
-    expect(await instance.currentPrice()).to.equal(ethers.parseEther("0.1"));
+    expect(await instance.getElapsedPortion()).to.equal(ethers.BigNumber.from(BigInt(1000000000000000000) / BigInt(3)));
+    expect(await instance.currentPrice()).to.equal(ethers.utils.parseEther("0.1"));
     // mine 24 hours 
     await mine(24 * 60 * 60 / 12);
     expect(await instance.getElapsedTime()).to.equal(48 * 60 * 60 / 12);
-    expect(await instance.getElapsedPortion()).to.equal(ethers.toBigInt("1000000000000000000") * BigInt(2) / BigInt(3));
-    expect(await instance.currentPrice()).to.equal(ethers.parseEther("0.01"));
+    expect(await instance.getElapsedPortion()).to.equal(ethers.BigNumber.from(BigInt(1000000000000000000) * BigInt(2) / BigInt(3)));
+    expect(await instance.currentPrice()).to.equal(ethers.utils.parseEther("0.01"));
     // mine 24 hours 
     await mine(24 * 60 * 60 / 12);
-    expect(await instance.getElapsedPortion()).to.equal(ethers.toBigInt("1000000000000000000"));
+    expect(await instance.getElapsedPortion()).to.equal(ethers.BigNumber.from(BigInt(1000000000000000000)));
     expect(await instance.getElapsedTime()).to.equal(72 * 60 * 60 / 12);
-    expect(await instance.currentPrice()).to.equal(ethers.parseEther("0.001"));
+    expect(await instance.currentPrice()).to.equal(ethers.utils.parseEther("0.001"));
 
     await mine(24 * 60 * 60 / 12);
-    expect(await instance.getElapsedPortion()).to.equal(ethers.toBigInt("1000000000000000000"));
+    expect(await instance.getElapsedPortion()).to.equal(ethers.BigNumber.from(BigInt(1000000000000000000)));
     expect(await instance.getElapsedTime()).to.equal(96 * 60 * 60 / 12);
-    expect(await instance.currentPrice()).to.equal(ethers.parseEther("0.001"));
+    expect(await instance.currentPrice()).to.equal(ethers.utils.parseEther("0.001"));
+  });
+
+});
+
+
+describe("DonkeyDecay deployed via Create2", function () {
+
+  it("Test contract", async function () {
+    const contractFactory = await ethers.getContractFactory("DonkeyDecay");
+    const deterministicTestSigner = ethers.Wallet.fromMnemonic(
+        "test test test test test test test test test test test junk"
+    ).connect(ethers.providers.getDefaultProvider());
+    const testingCreate2DeployerFactory = await ethers.getContractFactory("TestingCreate2Deployer");
+    const testingCreate2Deployer = await testingCreate2DeployerFactory.deploy();
+    await testingCreate2Deployer.deployed();
+    const salt = ethers.utils.hexZeroPad("0x0", 32);
+    let tx = await testingCreate2Deployer.deploy(salt, contractFactory.bytecode);
+    let rc = await tx.wait();
+    const contractAddress = rc.events?.find((e:any) => e.event === "OnDeploy")?.args?.addr;
+    console.log(`Contract deployed to ${contractAddress}`);
+    const calculatedCreateAddress = ethers.utils.getCreate2Address(
+        testingCreate2Deployer.address,
+        salt,
+        ethers.utils.keccak256(contractFactory.bytecode)
+    );
+    console.log(`Calculated create2 address: ${calculatedCreateAddress}`);
+    const instance = contractFactory.attach(contractAddress);
+    const owner = await instance.owner();
+    expect(owner).to.equal(`0xd240bc7905f8D32320937cd9aCC3e69084ec4658`);
+    expect(contractAddress).to.equal(calculatedCreateAddress);
   });
 
 });

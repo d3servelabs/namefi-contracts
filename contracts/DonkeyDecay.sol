@@ -31,6 +31,7 @@ contract DonkeyDecay is ERC721, ERC721URIStorage, Ownable {
         _lastMintBlock = block.number;
     }
 
+    // --- READONLY FUNCTIONS --- //
     function getLastMintBlock() public view returns (uint256) {
         return _lastMintBlock;
     }
@@ -48,10 +49,20 @@ contract DonkeyDecay is ERC721, ERC721URIStorage, Ownable {
         return int256(block.number - _lastMintBlock);
     }
 
-    function currentPrice() public view returns (int256) {
+    function currentPrice() external view returns (int256) {
+        return _currentPrice();
+    }
+
+    function _currentPrice() internal view returns (int256) {
         int256 base = FINAL_PRICE.div(INITIAL_PRICE);
         return INITIAL_PRICE.mul(base.pow(getElapsedPortion()));
     }
+
+    function _baseURI() internal view override returns (string memory) {
+        return bytes(_overrideBaseURI).length > 0 ? _overrideBaseURI : "https://dkdk.club/metadata/";
+    }
+
+    // --- WRAPPER OF WRITE FUNCTIONS  --- //
 
     fallback() external payable {
         _safeMint(msg.sender);
@@ -64,10 +75,12 @@ contract DonkeyDecay is ERC721, ERC721URIStorage, Ownable {
     function safeMint(address to) public payable { 
         _safeMint(to);
     }
+    
+    // --- CORE WRITE FUNCTIONS  --- //
 
     function _safeMint(address to) internal {
         // assert the payment has enough value
-        uint256 price = uint256(currentPrice());
+        uint256 price = uint256(_currentPrice());
         require(msg.value >= price, "Not enough value sent");
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
@@ -83,21 +96,18 @@ contract DonkeyDecay is ERC721, ERC721URIStorage, Ownable {
         _overrideBaseURI = baseURI;
     }
 
-    /// @dev Withdraws all proceeds to the treasury address
-    function withdrawProceeds() public {
-        require(_treasury != address(0), "Treasury not set");
-        require(address(this).balance > 0, "No proceeds to withdraw");
-        require(msg.sender == _treasury, "Not authorized");
-        payable(_treasury).transfer(address(this).balance);
-    }
-
     function setTreasury(address payable treasury) public onlyOwner {
         _treasury = treasury;
     }
 
-    function _baseURI() internal view override returns (string memory) {
-        return bytes(_overrideBaseURI).length > 0 ? _overrideBaseURI : "https://dkdk.club/metadata/";
+    /// @dev Withdraws all proceeds to the treasury address
+    function withdrawProceeds() public {
+        require(_treasury != address(0), "Treasury not set");
+        require(address(this).balance > 0, "No proceeds to withdraw");
+        require(msg.sender == _treasury || msg.sender == owner(), "Not authorized");
+        payable(_treasury).transfer(address(this).balance);
     }
+
 
     // The following functions are overrides required by Solidity.
 

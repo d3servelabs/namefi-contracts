@@ -4,9 +4,9 @@ async function main() {
   const ContractFactory = await ethers.getContractFactory("DonkeyDecay");
 
   const instance = await ContractFactory.deploy();
-  await instance.waitForDeployment();
+  await instance.deployed();
 
-  console.log(`Contract deployed to ${await instance.getAddress()}`);
+  console.log(`Contract deployed to ${await instance.address}`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
