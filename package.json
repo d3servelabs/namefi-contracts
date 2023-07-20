@@ -14,5 +14,8 @@
     "hardhat": "^2.16.1",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "prb-math": "^2.4.3"
   }
 }
