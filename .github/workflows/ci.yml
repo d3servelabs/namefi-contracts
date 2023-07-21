@@ -1,6 +1,12 @@
 name: CI
 on: [push]
-
+# Environment variables
+env:
+  MNEMONIC: ${{ secrets.MNEMONIC }}
+  INFURA_API_KEY: ${{ vars.INFURA_API_KEY }}
+  COINMARKETCAP_API_KEY: ${{ vars.COINMARKETCAP_API_KEY }}
+  ALCHEMY_API_KEY: ${{ vars.ALCHEMY_API_KEY }}
+  ETHERSCAN_API_KEY: ${{ vars.ETHERSCAN_API_KEY }}
 jobs:
   build:
     name: Test
@@ -24,7 +30,3 @@ jobs:
         uses: borales/actions-yarn@v4
         with:
           cmd: test # will run `yarn test` command
-      - name: Test the app with coverage
-        uses: borales/actions-yarn@v4
-        with:
-          cmd: coverage # will run `yarn coverage` command
