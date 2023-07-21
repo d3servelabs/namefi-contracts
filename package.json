@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
-    "compile": "hardhat compile"
+    "compile": "hardhat compile",
+    "coverage": "hardhat coverage"
   },
   "author": "",
   "license": "GPL-3.0",

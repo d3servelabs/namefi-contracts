@@ -20,11 +20,11 @@ jobs:
         uses: borales/actions-yarn@v4
         with:
           cmd: compile # will run `yarn compile` command
-      - name: Validate upgradablility
-        uses: borales/actions-yarn@v4
-        with:
-          cmd: validate # will run `yarn validate` command
       - name: Test the app
         uses: borales/actions-yarn@v4
         with:
           cmd: test # will run `yarn test` command
+      - name: Test the app with coverage
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: coverage # will run `yarn coverage` command
