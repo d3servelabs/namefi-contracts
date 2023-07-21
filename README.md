@@ -3,6 +3,7 @@
 
 ## Price time decay
 
+
 $P = P_{initial} \left(\frac{P_{final}}{P_{initial}}\right)^{\frac{B}{B_{total}}}$
 
 $P = \frac{P_{initial} \left(\frac{P_{final}}{P_{initial}}\right)^{\frac{B \cdot s}{B_{total} \cdot s}}}{s}$
