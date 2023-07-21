@@ -14,13 +14,13 @@ contract ADonkeyDecay is ERC721, ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
     event UpdateTreasury(address indexed treasury);
     Counters.Counter private _tokenIdCounter;
-    uint256 private _lastMintBlock;  // Default to 0
+    uint256 private _lastMintBlock; // Default to 0
     string private _overrideBaseURI;
     address payable private _treasury;
 
     int256 public constant INITIAL_PRICE = 10 ether; // in Wei
     int256 public constant FINAL_PRICE = 0.001 ether; // in Wei
-    int256 public constant AUCTION_DURATION_BLOCKS = (96 * 60 * 60 ) / 12 ; // Assume 12 seconds per block
+    int256 public constant AUCTION_DURATION_BLOCKS = (96 * 60 * 60) / 12; // Assume 12 seconds per block
     uint256 public constant MAX_SUPPLY = 1000;
 
     constructor(
@@ -45,7 +45,9 @@ contract ADonkeyDecay is ERC721, ERC721URIStorage, Ownable {
         if (getElapsedTime(blockNum) > AUCTION_DURATION_BLOCKS) {
             elapsedPortion = 1e18;
         } else {
-            elapsedPortion = getElapsedTime(blockNum).div(AUCTION_DURATION_BLOCKS);
+            elapsedPortion = getElapsedTime(blockNum).div(
+                AUCTION_DURATION_BLOCKS
+            );
         }
         return elapsedPortion;
     }
@@ -68,7 +70,10 @@ contract ADonkeyDecay is ERC721, ERC721URIStorage, Ownable {
     }
 
     function _baseURI() internal view override returns (string memory) {
-        return bytes(_overrideBaseURI).length > 0 ? _overrideBaseURI : super._baseURI();
+        return
+            bytes(_overrideBaseURI).length > 0
+                ? _overrideBaseURI
+                : super._baseURI();
     }
 
     // --- WRAPPER OF WRITE FUNCTIONS  --- //
@@ -80,11 +85,11 @@ contract ADonkeyDecay is ERC721, ERC721URIStorage, Ownable {
         _safeMint(msg.sender);
     }
 
-    function safeMint(address to) public payable { 
+    function safeMint(address to) public payable {
         require(_tokenIdCounter.current() < MAX_SUPPLY, "Max supply reached");
         _safeMint(to);
     }
-    
+
     // --- CORE WRITE FUNCTIONS  --- //
 
     function _safeMint(address to) internal {
@@ -104,7 +109,7 @@ contract ADonkeyDecay is ERC721, ERC721URIStorage, Ownable {
     function setBaseURI(string memory baseURI) public onlyOwner {
         _setBaseURI(baseURI);
     }
-    
+
     function _setBaseURI(string memory baseURI) internal {
         _overrideBaseURI = baseURI;
     }
@@ -121,32 +126,30 @@ contract ADonkeyDecay is ERC721, ERC721URIStorage, Ownable {
     function withdrawProceeds() public {
         require(_treasury != address(0), "Treasury not set");
         require(address(this).balance > 0, "No proceeds to withdraw");
-        require(msg.sender == _treasury || msg.sender == owner(), "Not authorized");
+        require(
+            msg.sender == _treasury || msg.sender == owner(),
+            "Not authorized"
+        );
         payable(_treasury).transfer(address(this).balance);
     }
 
-
     // The following functions are overrides required by Solidity.
 
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
+    function _burn(
+        uint256 tokenId
+    ) internal override(ERC721, ERC721URIStorage) {
         super._burn(tokenId);
     }
 
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        override(ERC721, ERC721URIStorage)
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 tokenId
+    ) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         return super.tokenURI(tokenId);
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(ERC721, ERC721URIStorage)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC721, ERC721URIStorage) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }

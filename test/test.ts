@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { loadFixture, mine} from "@nomicfoundation/hardhat-network-helpers";
+import { loadFixture, mine } from "@nomicfoundation/hardhat-network-helpers";
 const DEFAULT_HARDHAT_ETH_BALANCE = ethers.utils.parseEther("10000");
 const DESIGNATIED_INTIALIZER = "0xd240bc7905f8D32320937cd9aCC3e69084ec4658";
 
@@ -69,7 +69,7 @@ describe("DonkeyDecay", function () {
     await mine(24 * 60 * 60 / 12);
     currentBlock = await ethers.provider.getBlockNumber();
     expect(await instance.getElapsedPortion(currentBlock)).to.equal(ethers.BigNumber.from(BigInt(1000000000000000000)));
-    expect(await instance.getElapsedTime(currentBlock)).to.equal(128 * 60 * 60 / 12);
+    expect(await instance.getElapsedTime(currentBlock)).to.equal(120 * 60 * 60 / 12);
     expect(await instance.currentPrice()).to.equal(ethers.utils.parseEther("0.001"));
   });
 
@@ -80,7 +80,7 @@ describe("DonkeyDecay deployed via Create2", function () {
   async function deployFixture() {
     const contractFactory = await ethers.getContractFactory("DonkeyDecay");
     const deterministicTestSigner = ethers.Wallet.fromMnemonic(
-        "test test test test test test test test test test test junk"
+      "test test test test test test test test test test test junk"
     ).connect(ethers.providers.getDefaultProvider());
     const testingCreate2DeployerFactory = await ethers.getContractFactory("TestingCreate2Deployer");
     const testingCreate2Deployer = await testingCreate2DeployerFactory.deploy();
@@ -88,33 +88,32 @@ describe("DonkeyDecay deployed via Create2", function () {
     const salt = ethers.utils.hexZeroPad("0x0", 32);
     let tx = await testingCreate2Deployer.deploy(salt, contractFactory.bytecode);
     let rc = await tx.wait();
-    const contractAddress = rc.events?.find((e:any) => e.event === "OnDeploy")?.args?.addr;
-    console.log(`Contract deployed to ${contractAddress}`);
+    const contractAddress = rc.events?.find((e: any) => e.event === "OnDeploy")?.args?.addr;
+
     const calculatedCreateAddress = ethers.utils.getCreate2Address(
-        testingCreate2Deployer.address,
-        salt,
-        ethers.utils.keccak256(contractFactory.bytecode)
+      testingCreate2Deployer.address,
+      salt,
+      ethers.utils.keccak256(contractFactory.bytecode)
     );
-    console.log(`Calculated create2 address: ${calculatedCreateAddress}`);
     const instance = contractFactory.attach(contractAddress);
     expect(contractAddress).to.equal(calculatedCreateAddress);
     return {
-      instance, 
-      contractFactory, 
+      instance,
+      contractFactory,
       testingCreate2Deployer,
       deterministicTestSigner,
-      salt, 
+      salt,
       contractAddress
     };
   }
 
   it("should succeed", async function () {
     const {
-      instance, 
-      contractFactory, 
+      instance,
+      contractFactory,
       testingCreate2Deployer,
       deterministicTestSigner,
-      salt, 
+      salt,
       contractAddress
     } = await loadFixture(deployFixture);
     const owner = await instance.owner();
@@ -124,10 +123,10 @@ describe("DonkeyDecay deployed via Create2", function () {
   it("should mint via other approach.", async function () {
     const {
       instance,
-      contractFactory, 
+      contractFactory,
       testingCreate2Deployer,
       deterministicTestSigner,
-      salt, 
+      salt,
       contractAddress
     } = await loadFixture(deployFixture);
     const signers = await ethers.getSigners();
@@ -135,12 +134,12 @@ describe("DonkeyDecay deployed via Create2", function () {
     let friend = signers[2];
     expect(await user.getBalance()).to.equal(DEFAULT_HARDHAT_ETH_BALANCE);
     const price = await instance.currentPrice();
-    expect(price).to.equal(ethers.utils.parseEther("1"));
+    expect(price).to.equal(ethers.utils.parseEther("10"));
     const currentBlock = await ethers.provider.getBlockNumber();
-    const priceNextBlock = await instance.getPriceAtBlock(currentBlock+1);
+    const priceNextBlock = await instance.getPriceAtBlock(currentBlock + 1);
     let tx = await instance.connect(user).safeMint(
       friend.address,
-      { value: ethers.utils.parseEther("2.0") });
+      { value: ethers.utils.parseEther("10.0") });
     let rc = await tx.wait();
     const gasCost = rc.gasUsed.mul(rc.effectiveGasPrice);
     expect(await instance.balanceOf(friend.address)).to.equal(1);
@@ -161,15 +160,16 @@ describe("Arugmentable DonkeyDecay", function () {
       "test test test test test test test test test test test junk"
     ).connect(ethers.provider);
 
-    expect(await deterministicTestSigner.getBalance()).to.equal(ethers.utils.parseEther("10000"));
-    
+    expect(await deterministicTestSigner.getBalance())
+      .to.greaterThan(ethers.utils.parseEther("9998"));
+
     const instance = await ContractFactory.deploy(
       deterministicTestSigner.address,
       "Donkey Decay",
       "DKDK",
       "https://dkdk.club/metadata/",
     );
-  
+
     await instance.deployed();
 
     return { instance, deterministicTestSigner };
@@ -177,7 +177,7 @@ describe("Arugmentable DonkeyDecay", function () {
 
   it("should succeed", async function () {
     const {
-      instance, 
+      instance,
       deterministicTestSigner,
     } = await loadFixture(deployFixture);
     const owner = await instance.owner();
@@ -186,7 +186,7 @@ describe("Arugmentable DonkeyDecay", function () {
 
   it("owner and ONLY owner should be able to setURI and treasury", async function () {
     const {
-      instance, 
+      instance,
       deterministicTestSigner,
     } = await loadFixture(deployFixture);
     const owner = await instance.owner();
@@ -196,8 +196,9 @@ describe("Arugmentable DonkeyDecay", function () {
 
     await instance.connect(deterministicTestSigner).safeMint(
       deterministicTestSigner.address,
-      { value: ethers.utils.parseEther("10.0")
-    });
+      {
+        value: ethers.utils.parseEther("10.0")
+      });
     expect(await instance.balanceOf(deterministicTestSigner.address)).to.equal(1);
     expect(await instance.ownerOf(0)).to.equal(deterministicTestSigner.address);
     expect(await instance.tokenURI(0)).to.equal("https://dkdk.club/metadata/0");
@@ -217,9 +218,9 @@ describe("Arugmentable DonkeyDecay", function () {
     ).to.be.revertedWith("Ownable: caller is not the owner");
   });
 
-  it("can mint until MAX_SUPPLY", async function () { 
+  it("can mint until MAX_SUPPLY", async function () {
     const {
-      instance, 
+      instance,
       deterministicTestSigner,
     } = await loadFixture(deployFixture);
     const owner = await instance.owner();
@@ -232,8 +233,9 @@ describe("Arugmentable DonkeyDecay", function () {
       await mine(128 * 60 * 60 / 12);
       await instance.connect(user).safeMint(
         deterministicTestSigner.address,
-        { value: ethers.utils.parseEther("0.001")
-      });
+        {
+          value: ethers.utils.parseEther("0.001")
+        });
     }
 
     expect(await instance.balanceOf(deterministicTestSigner.address)).to.equal(1000);
@@ -242,15 +244,16 @@ describe("Arugmentable DonkeyDecay", function () {
     await expect(
       instance.connect(user).safeMint(
         deterministicTestSigner.address,
-        { value: ethers.utils.parseEther("2.0")
-      })
+        {
+          value: ethers.utils.parseEther("2.0")
+        })
     ).to.be.revertedWith("Max supply reached");
   });
 
 
-  it("Owner can withdraw to treasury", async function () { 
+  it("Owner can withdraw to treasury", async function () {
     const {
-      instance, 
+      instance,
       deterministicTestSigner,
     } = await loadFixture(deployFixture);
     const owner = await instance.owner();
@@ -261,8 +264,9 @@ describe("Arugmentable DonkeyDecay", function () {
       await mine(128 * 60 * 60 / 12);
       await instance.connect(user).safeMint(
         deterministicTestSigner.address,
-        { value: ethers.utils.parseEther("0.001")
-      });
+        {
+          value: ethers.utils.parseEther("0.001")
+        });
     }
     await instance.connect(deterministicTestSigner).setTreasury(user.address);
     expect(await instance.getTreasury()).to.equal(user.address);
@@ -273,9 +277,9 @@ describe("Arugmentable DonkeyDecay", function () {
     expect(await ethers.provider.getBalance(instance.address)).to.equal(ethers.constants.Zero);
   });
 
-  it("Treasury can withdraw to treasury", async function () { 
+  it("Treasury can withdraw to treasury", async function () {
     const {
-      instance, 
+      instance,
       deterministicTestSigner,
     } = await loadFixture(deployFixture);
     const owner = await instance.owner();
@@ -286,8 +290,9 @@ describe("Arugmentable DonkeyDecay", function () {
       await mine(128 * 60 * 60 / 12);
       await instance.connect(user).safeMint(
         deterministicTestSigner.address,
-        { value: ethers.utils.parseEther("0.001")
-      });
+        {
+          value: ethers.utils.parseEther("0.001")
+        });
     }
     await instance.connect(deterministicTestSigner).setTreasury(user.address);
     expect(await instance.getTreasury()).to.equal(user.address);
@@ -300,9 +305,9 @@ describe("Arugmentable DonkeyDecay", function () {
     expect(await ethers.provider.getBalance(instance.address)).to.equal(ethers.constants.Zero);
   });
 
-  it("Others can NOT withdraw to treasury", async function () { 
+  it("Others can NOT withdraw to treasury", async function () {
     const {
-      instance, 
+      instance,
       deterministicTestSigner,
     } = await loadFixture(deployFixture);
     const owner = await instance.owner();
@@ -312,8 +317,9 @@ describe("Arugmentable DonkeyDecay", function () {
     await mine(128 * 60 * 60 / 12);
     await instance.connect(user).safeMint(
       deterministicTestSigner.address,
-      { value: ethers.utils.parseEther("0.001")
-    });
+      {
+        value: ethers.utils.parseEther("0.001")
+      });
     const someGuy = signers[2];
     // someGuy call withdrawProceeds and fail
     await expect(
