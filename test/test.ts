@@ -19,7 +19,6 @@ describe("DonkeyDecay", function () {
 
   it("Test contract", async function () {
     const ContractFactory = await ethers.getContractFactory("DonkeyDecay");
-
     const instance = await ContractFactory.deploy();
     await instance.deployed();
 
@@ -40,36 +39,41 @@ describe("DonkeyDecay", function () {
     let currentBlock = await ethers.provider.getBlockNumber();
     expect(await instance.getElapsedTime(currentBlock)).to.equal(0);
     expect(await instance.getElapsedPortion(currentBlock)).to.equal(0);
+    expect(await instance.currentPrice()).to.equal(ethers.utils.parseEther("10"));
+    // mine 24 hours 
+    await mine(24 * 60 * 60 / 12);
+    currentBlock = await ethers.provider.getBlockNumber();
+    expect(await instance.getElapsedTime(currentBlock)).to.equal(24 * 60 * 60 / 12);
+    expect(await instance.getElapsedPortion(currentBlock)).to.equal(ethers.BigNumber.from(BigInt(1000000000000000000) / BigInt(4)));
     expect(await instance.currentPrice()).to.equal(ethers.utils.parseEther("1"));
 
     // mine 24 hours 
     await mine(24 * 60 * 60 / 12);
     currentBlock = await ethers.provider.getBlockNumber();
-    expect(await instance.getElapsedTime(currentBlock)).to.equal(24 * 60 * 60 / 12);
-    expect(await instance.getElapsedPortion(currentBlock)).to.equal(ethers.BigNumber.from(BigInt(1000000000000000000) / BigInt(3)));
+    expect(await instance.getElapsedTime(currentBlock)).to.equal(48 * 60 * 60 / 12);
+    expect(await instance.getElapsedPortion(currentBlock)).to.equal(ethers.BigNumber.from(BigInt(1000000000000000000) / BigInt(2)));
     expect(await instance.currentPrice()).to.equal(ethers.utils.parseEther("0.1"));
     // mine 24 hours 
     await mine(24 * 60 * 60 / 12);
     currentBlock = await ethers.provider.getBlockNumber();
-    expect(await instance.getElapsedTime(currentBlock)).to.equal(48 * 60 * 60 / 12);
-    expect(await instance.getElapsedPortion(currentBlock)).to.equal(ethers.BigNumber.from(BigInt(1000000000000000000) * BigInt(2) / BigInt(3)));
+    expect(await instance.getElapsedTime(currentBlock)).to.equal(72 * 60 * 60 / 12);
+    expect(await instance.getElapsedPortion(currentBlock)).to.equal(ethers.BigNumber.from(BigInt(1000000000000000000) * BigInt(3) / BigInt(4)));
     expect(await instance.currentPrice()).to.equal(ethers.utils.parseEther("0.01"));
     // mine 24 hours 
     await mine(24 * 60 * 60 / 12);
     currentBlock = await ethers.provider.getBlockNumber();
     expect(await instance.getElapsedPortion(currentBlock)).to.equal(ethers.BigNumber.from(BigInt(1000000000000000000)));
-    expect(await instance.getElapsedTime(currentBlock)).to.equal(72 * 60 * 60 / 12);
+    expect(await instance.getElapsedTime(currentBlock)).to.equal(96 * 60 * 60 / 12);
     expect(await instance.currentPrice()).to.equal(ethers.utils.parseEther("0.001"));
 
     await mine(24 * 60 * 60 / 12);
     currentBlock = await ethers.provider.getBlockNumber();
     expect(await instance.getElapsedPortion(currentBlock)).to.equal(ethers.BigNumber.from(BigInt(1000000000000000000)));
-    expect(await instance.getElapsedTime(currentBlock)).to.equal(96 * 60 * 60 / 12);
+    expect(await instance.getElapsedTime(currentBlock)).to.equal(128 * 60 * 60 / 12);
     expect(await instance.currentPrice()).to.equal(ethers.utils.parseEther("0.001"));
   });
 
 });
-
 
 describe("DonkeyDecay deployed via Create2", function () {
   // deployFixture
@@ -117,7 +121,7 @@ describe("DonkeyDecay deployed via Create2", function () {
     expect(owner).to.equal(DESIGNATIED_INTIALIZER);
   });
 
-  it("Test contract", async function () {
+  it("should mint via other approach.", async function () {
     const {
       instance,
       contractFactory, 
@@ -128,25 +132,172 @@ describe("DonkeyDecay deployed via Create2", function () {
     } = await loadFixture(deployFixture);
     const signers = await ethers.getSigners();
     let user = signers[1];
+    let friend = signers[2];
     expect(await user.getBalance()).to.equal(DEFAULT_HARDHAT_ETH_BALANCE);
     const price = await instance.currentPrice();
     expect(price).to.equal(ethers.utils.parseEther("1"));
     const currentBlock = await ethers.provider.getBlockNumber();
     const priceNextBlock = await instance.getPriceAtBlock(currentBlock+1);
-    let tx = await user.sendTransaction({
-      to: contractAddress,
-      value: ethers.utils.parseEther("2.0")
-    });
+    let tx = await instance.connect(user).safeMint(
+      friend.address,
+      { value: ethers.utils.parseEther("2.0") });
     let rc = await tx.wait();
     const gasCost = rc.gasUsed.mul(rc.effectiveGasPrice);
-    expect(await instance.balanceOf(user.address)).to.equal(1);
-    expect(await instance.ownerOf(0)).to.equal(user.address);
+    expect(await instance.balanceOf(friend.address)).to.equal(1);
+    expect(await instance.ownerOf(0)).to.equal(friend.address);
     expect(
       gasCost.add(priceNextBlock).add(await user.getBalance())
     ).to.equal(
       DEFAULT_HARDHAT_ETH_BALANCE
     )
   });
+});
+
+describe("Arugmentable DonkeyDecay", function () {
+  // deployFixture
+  async function deployFixture() {
+    const ContractFactory = await ethers.getContractFactory("ADonkeyDecay");
+    const deterministicTestSigner = ethers.Wallet.fromMnemonic(
+      "test test test test test test test test test test test junk"
+    ).connect(ethers.provider);
+
+    expect(await deterministicTestSigner.getBalance()).to.equal(ethers.utils.parseEther("10000"));
+    
+    const instance = await ContractFactory.deploy(
+      deterministicTestSigner.address,
+      "Donkey Decay",
+      "DKDK",
+      "https://dkdk.club/metadata/",
+    );
+  
+    await instance.deployed();
+
+    return { instance, deterministicTestSigner };
+  }
+
+  it("should succeed", async function () {
+    const {
+      instance, 
+      deterministicTestSigner,
+    } = await loadFixture(deployFixture);
+    const owner = await instance.owner();
+    expect(owner).to.equal(deterministicTestSigner.address);
+  });
+
+  it("owner and ONLY owner should be able to setURI and treasury", async function () {
+    const {
+      instance, 
+      deterministicTestSigner,
+    } = await loadFixture(deployFixture);
+    const owner = await instance.owner();
+    expect(owner).to.equal(deterministicTestSigner.address);
+    const signers = await ethers.getSigners();
+    let user = signers[1];
+
+    await instance.connect(deterministicTestSigner).safeMint(
+      deterministicTestSigner.address,
+      { value: ethers.utils.parseEther("10.0")
+    });
+    expect(await instance.balanceOf(deterministicTestSigner.address)).to.equal(1);
+    expect(await instance.ownerOf(0)).to.equal(deterministicTestSigner.address);
+    expect(await instance.tokenURI(0)).to.equal("https://dkdk.club/metadata/0");
+    await instance.connect(deterministicTestSigner).setBaseURI("https://example.com/");
+    expect(await instance.tokenURI(0)).to.equal("https://example.com/0");
+
+    expect(await instance.getTreasury()).to.equal(deterministicTestSigner.address);
+    await instance.setTreasury(user.address);
+    expect(await instance.getTreasury()).to.equal(user.address);
+
+    const someGuy = signers[2];
+    await expect(
+      instance.connect(someGuy).setBaseURI("https://example.com/")
+    ).to.be.revertedWith("Ownable: caller is not the owner");
+    await expect(
+      instance.connect(someGuy).setTreasury(user.address)
+    ).to.be.revertedWith("Ownable: caller is not the owner");
+  });
+
+  it("can mint until MAX_SUPPLY", async function () { 
+    const {
+      instance, 
+      deterministicTestSigner,
+    } = await loadFixture(deployFixture);
+    const owner = await instance.owner();
+    expect(owner).to.equal(deterministicTestSigner.address);
+    const signers = await ethers.getSigners();
+    // expect(await instance.balanceOf(deterministicTestSigner.address)).to.equal(0);
+    // expect(await instance.ownerOf(0)).to.equal(ethers.constants.AddressZero);
+    let user = signers[1];
+    for (let i = 0; i < 1000; i++) {
+      await mine(128 * 60 * 60 / 12);
+      await instance.connect(user).safeMint(
+        deterministicTestSigner.address,
+        { value: ethers.utils.parseEther("0.001")
+      });
+    }
+
+    expect(await instance.balanceOf(deterministicTestSigner.address)).to.equal(1000);
+    expect(await instance.ownerOf(999)).to.equal(deterministicTestSigner.address);
+    expect(await instance.tokenURI(999)).to.equal("https://dkdk.club/metadata/999");
+    await expect(
+      instance.connect(user).safeMint(
+        deterministicTestSigner.address,
+        { value: ethers.utils.parseEther("2.0")
+      })
+    ).to.be.revertedWith("Max supply reached");
+  });
 
 
+  it("Owner can withdraw to treasury", async function () { 
+    const {
+      instance, 
+      deterministicTestSigner,
+    } = await loadFixture(deployFixture);
+    const owner = await instance.owner();
+    expect(owner).to.equal(deterministicTestSigner.address);
+    const signers = await ethers.getSigners();
+    let user = signers[1];
+    for (let i = 0; i < 1000; i++) {
+      await mine(128 * 60 * 60 / 12);
+      await instance.connect(user).safeMint(
+        deterministicTestSigner.address,
+        { value: ethers.utils.parseEther("0.001")
+      });
+    }
+    await instance.connect(deterministicTestSigner).setTreasury(user.address);
+    expect(await instance.getTreasury()).to.equal(user.address);
+    const treasuryBalanceBefore = await user.getBalance();
+    await instance.connect(deterministicTestSigner).withdrawProceeds();
+    const treasuryBalanceAfter = await user.getBalance();
+    expect(treasuryBalanceAfter.sub(treasuryBalanceBefore)).to.equal(ethers.utils.parseEther("1.0"));
+    expect(await ethers.provider.getBalance(instance.address)).to.equal(ethers.constants.Zero);
+  });
+
+
+  it("Treasury can withdraw to treasury", async function () { 
+    const {
+      instance, 
+      deterministicTestSigner,
+    } = await loadFixture(deployFixture);
+    const owner = await instance.owner();
+    expect(owner).to.equal(deterministicTestSigner.address);
+    const signers = await ethers.getSigners();
+    let user = signers[1];
+    for (let i = 0; i < 1000; i++) {
+      await mine(128 * 60 * 60 / 12);
+      await instance.connect(user).safeMint(
+        deterministicTestSigner.address,
+        { value: ethers.utils.parseEther("0.001")
+      });
+    }
+    await instance.connect(deterministicTestSigner).setTreasury(user.address);
+    expect(await instance.getTreasury()).to.equal(user.address);
+    const treasuryBalanceBefore = await user.getBalance();
+    let tx = await instance.connect(user).withdrawProceeds();
+    let rc = await tx.wait();
+    const gasCost = rc.gasUsed.mul(rc.effectiveGasPrice);
+    const treasuryBalanceAfter = await user.getBalance();
+    expect(treasuryBalanceAfter.sub(treasuryBalanceBefore).add(gasCost)).to.equal(ethers.utils.parseEther("1.0"));
+    expect(await ethers.provider.getBalance(instance.address)).to.equal(ethers.constants.Zero);
+  });
 });
