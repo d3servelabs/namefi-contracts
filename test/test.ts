@@ -273,7 +273,6 @@ describe("Arugmentable DonkeyDecay", function () {
     expect(await ethers.provider.getBalance(instance.address)).to.equal(ethers.constants.Zero);
   });
 
-
   it("Treasury can withdraw to treasury", async function () { 
     const {
       instance, 
@@ -299,5 +298,26 @@ describe("Arugmentable DonkeyDecay", function () {
     const treasuryBalanceAfter = await user.getBalance();
     expect(treasuryBalanceAfter.sub(treasuryBalanceBefore).add(gasCost)).to.equal(ethers.utils.parseEther("1.0"));
     expect(await ethers.provider.getBalance(instance.address)).to.equal(ethers.constants.Zero);
+  });
+
+  it("Others can NOT withdraw to treasury", async function () { 
+    const {
+      instance, 
+      deterministicTestSigner,
+    } = await loadFixture(deployFixture);
+    const owner = await instance.owner();
+    expect(owner).to.equal(deterministicTestSigner.address);
+    const signers = await ethers.getSigners();
+    let user = signers[1];
+    await mine(128 * 60 * 60 / 12);
+    await instance.connect(user).safeMint(
+      deterministicTestSigner.address,
+      { value: ethers.utils.parseEther("0.001")
+    });
+    const someGuy = signers[2];
+    // someGuy call withdrawProceeds and fail
+    await expect(
+      instance.connect(someGuy).withdrawProceeds()
+    ).to.be.revertedWith("Not authorized");
   });
 });
