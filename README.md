@@ -1,4 +1,5 @@
 # Donkey Decay NFT
+[![CI](https://github.com/xinbenlv/donkey-decay-club/actions/workflows/ci.yml/badge.svg)](https://github.com/xinbenlv/donkey-decay-club/actions/workflows/ci.yml)
 
 ## Price time decay
 
