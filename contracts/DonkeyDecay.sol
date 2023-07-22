@@ -7,7 +7,7 @@ import "./ADonkeyDecay.sol";
 contract DonkeyDecay is ADonkeyDecay {
     address public constant DESIGNATIED_INTIALIZER =
         0xd240bc7905f8D32320937cd9aCC3e69084ec4658;
-    string public constant DEFAULT_BASE_URI = "https://dkdk.club/metadata/";
+    string public constant DEFAULT_BASE_URI = "https://data.dkdk.club/metadata/";
     string public constant DEFAULT_NAME = "Donkey Decay";
     string public constant DEFAULT_SYMBOL = "DKDK";
 

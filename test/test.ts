@@ -167,7 +167,7 @@ describe("Arugmentable DonkeyDecay", function () {
       deterministicTestSigner.address,
       "Donkey Decay",
       "DKDK",
-      "https://dkdk.club/metadata/",
+      "https://data.dkdk.club/metadata/",
     );
 
     await instance.deployed();
@@ -201,7 +201,7 @@ describe("Arugmentable DonkeyDecay", function () {
       });
     expect(await instance.balanceOf(deterministicTestSigner.address)).to.equal(1);
     expect(await instance.ownerOf(0)).to.equal(deterministicTestSigner.address);
-    expect(await instance.tokenURI(0)).to.equal("https://dkdk.club/metadata/0");
+    expect(await instance.tokenURI(0)).to.equal("https://data.dkdk.club/metadata/0");
     await instance.connect(deterministicTestSigner).setBaseURI("https://example.com/");
     expect(await instance.tokenURI(0)).to.equal("https://example.com/0");
 
@@ -240,7 +240,7 @@ describe("Arugmentable DonkeyDecay", function () {
 
     expect(await instance.balanceOf(deterministicTestSigner.address)).to.equal(1000);
     expect(await instance.ownerOf(999)).to.equal(deterministicTestSigner.address);
-    expect(await instance.tokenURI(999)).to.equal("https://dkdk.club/metadata/999");
+    expect(await instance.tokenURI(999)).to.equal("https://data.dkdk.club/metadata/999");
     await expect(
       instance.connect(user).safeMint(
         deterministicTestSigner.address,
