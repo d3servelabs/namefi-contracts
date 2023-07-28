@@ -11,6 +11,7 @@ describe("DonkeyDecay", function () {
 
     const instance = await ContractFactory.deploy();
     await instance.deployed();
+    console.log(`XXX bytecode`, ContractFactory.bytecode);
     const signers = await ethers.getSigners();
     // signer 
     const signer = signers[0];
@@ -226,8 +227,6 @@ describe("Arugmentable DonkeyDecay", function () {
     const owner = await instance.owner();
     expect(owner).to.equal(deterministicTestSigner.address);
     const signers = await ethers.getSigners();
-    // expect(await instance.balanceOf(deterministicTestSigner.address)).to.equal(0);
-    // expect(await instance.ownerOf(0)).to.equal(ethers.constants.AddressZero);
     let user = signers[1];
     for (let i = 0; i < 1000; i++) {
       await mine(128 * 60 * 60 / 12);
