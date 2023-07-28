@@ -15,7 +15,6 @@ task("dkdk-deploy", "Deploy")
         const signer = signers[0];
         const contractFactory = await ethers.getContractFactory(contractName);
 
-
         await signer.sendTransaction({ 
             to: create2Factory.address, 
             data: contractFactory.bytecode,
