@@ -17,20 +17,21 @@ contract D3BridgeNFT is ERC721, Ownable {
         return uint256(keccak256(abi.encodePacked(domainName)));
     }
 
-    function safeMint(address to, string memory domainName) public onlyOwner {
-        uint256 tokenId = domainNameToId(domainName);
+    function safeMintByName(address to, string memory domainName) public onlyOwner {
+        uint256 tokenId = normalizedDomainNameToId(domainName);
         _idToDomainNameMap[tokenId] = domainName;
         _safeMint(to, tokenId);
     }
 
-    function safeTransferFrom(address from, address to, string memory domainName) public {
-        uint256 tokenId = domainNameToId(domainName);
+    function safeTransferFromByName(address from, address to, string memory domainName) public {
+        uint256 tokenId = normalizedDomainNameToId(domainName);
         _idToDomainNameMap[tokenId] = domainName;
+        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
         _safeTransfer(from, to, tokenId, "");
     }
 
-    function burn(string memory domainName) public onlyOwner {
-        uint256 tokenId = domainNameToId(domainName);
+    function burnByName(string memory domainName) public onlyOwner {
+        uint256 tokenId = normalizedDomainNameToId(domainName);
         _idToDomainNameMap[tokenId] = "";
         _burn(tokenId);
     }

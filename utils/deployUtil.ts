@@ -14,7 +14,9 @@ export async function deployByName(
     ): Promise<any> /*deployed address*/ {
     console.log(`Deploying ${contractName} with parameters ${parameters}`);
     const contractFactory = await ethers.getContractFactory(contractName);
-    const contract = await contractFactory.connect(signer ? signer : (await ethers.getSigners())[0]).deploy(...parameters);
+    const contract = await contractFactory
+        .connect(signer ? signer : (await ethers.getSigners())[0])
+        .deploy(...parameters);
     await contract.deployed();
     console.log(`${contractName} deployed to: ${contract.address}`);
     let tx = contract.deployTransaction;
