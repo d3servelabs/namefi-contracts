@@ -1,5 +1,5 @@
 # D3Bridge NFT
-[![CI](https://github.com/xinbenlv/donkey-decay-club/actions/workflows/ci.yml/badge.svg)](https://github.com/xinbenlv/donkey-decay-club/actions/workflows/ci.yml)
+[![CI](https://github.com/d3servelabs/d3bridge-nft/actions/workflows/ci.yml/badge.svg)](https://github.com/d3servelabs/d3bridge-nft/actions/workflows/ci.yml)
 
 ## Current Deployment
 
