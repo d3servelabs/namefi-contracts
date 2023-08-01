@@ -8,21 +8,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract D3BridgeNFT is ERC721, Ownable {
     constructor() ERC721("D3BridgeNFT", "D3B") {}
     mapping(uint256 => string) private _idToDomainNameMap;
-    
-    function validateNormalizedDomainName(string memory domainName) public returns (bool) {
-        // require that the domain name is normalized
-        // regex a-z0-9-\.+
-        // require that the domain name is not too long
-        // require that the domain name is not too short
-        // TODO implement
-        return true;
-    }
 
-    function idToDomainName(uint256 tokenId) public view returns (string memory) {
+    function idToNormalizedDomainName(uint256 tokenId) public view returns (string memory) {
         return _idToDomainNameMap[tokenId];
     }
 
-    function domainNameToId(string memory domainName) public pure returns (uint256) {
+    function normalizedDomainNameToId(string memory domainName) public pure returns (uint256) {
         return uint256(keccak256(abi.encodePacked(domainName)));
     }
 
