@@ -39,6 +39,13 @@ const config: HardhatUserConfig = {
       },
       // gasPrice: 5000000000 // 5 gwei
     },
+    goerli_blockscout: {
+      url: `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: {
+        mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
+      },
+      // gasPrice: 5000000000 // 5 gwei
+    },
     dashboard: {
       url: "http://localhost:24012/rpc",
       timeout: 1200000,
@@ -48,6 +55,7 @@ const config: HardhatUserConfig = {
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY as string,
       goerli: process.env.ETHERSCAN_API_KEY as string,
+      goerli_blockscout: process.env.ETHERSCAN_API_KEY as string,
       dashboard: process.env.ETHERSCAN_API_KEY as string,
     },
     customChains: [
@@ -57,6 +65,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api-goerli.etherscan.io/api",
           browserURL: "https://goerli.etherscan.io"
+        }
+      },
+      {
+        network: "goerli_blockscout",
+        chainId: 5,
+        urls: {
+          apiURL: "https://eth-goerli.blockscout.com/api",
+          browserURL: "https://eth-goerli.blockscout.com/"
         }
       }
     ]
