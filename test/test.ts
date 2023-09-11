@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { deployByName } from "../utils/deployUtil";
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 
 describe("D3BridgeNFT", function () {
   // deployFixture
@@ -15,7 +15,7 @@ describe("D3BridgeNFT", function () {
     return { instance, deterministicTestSigner, signers };
   }
 
-  it("Test contract", async function () {
+  it("should function e2e", async function () {
     const { instance, signers, deterministicTestSigner } = await loadFixture(deployFixture);
     const contractOwner = deterministicTestSigner;
     const alice = signers[1];
@@ -73,6 +73,48 @@ describe("D3BridgeNFT", function () {
     expect(event1?.args?.from).to.equal(charlie.address);
     expect(event1?.args?.tokenId).to.equal(ethers.utils.id(normalizedDomainName));
     await expect(instance.ownerOf(ethers.utils.id(normalizedDomainName))).to.be.revertedWith("ERC721: invalid token ID");
+  });
+
+  describe("Expiration", function() {
+    it("Should be respected at minting", async function () {
+      const { instance, signers, deterministicTestSigner } = await loadFixture(deployFixture);
+      const contractOwner = deterministicTestSigner;
+      const alice = signers[1];
+      const bob = signers[2];
+      const charlie = signers[3];
+      const normalizedDomainName = "bob.alice.eth";
+  
+      const expirationTime =
+        (await ethers.provider.getBlock("latest")).timestamp - 1;
+  
+      await expect(instance.connect(deterministicTestSigner).safeMintByName(
+        bob.address,
+        normalizedDomainName,
+        expirationTime))
+        .to.be.revertedWith("D3BridgeNFT: expired");
+    });
+
+    it("Should be respected at transfering", async function () {
+      const { instance, signers, deterministicTestSigner } = await loadFixture(deployFixture);
+      const contractOwner = deterministicTestSigner;
+      const alice = signers[1];
+      const bob = signers[2];
+      const charlie = signers[3];
+      const normalizedDomainName = "bob.alice.eth";
+  
+      const expirationTime =
+        (await ethers.provider.getBlock("latest")).timestamp + 1;
+  
+      const tx = await instance.connect(deterministicTestSigner)
+        .safeMintByName(
+          bob.address,
+          normalizedDomainName,
+          expirationTime
+        );
+      await time.increaseTo(expirationTime + 1);
+      await expect(instance.connect(bob).safeTransferFromByName(bob.address, charlie.address, normalizedDomainName))
+        .to.be.revertedWith("D3BridgeNFT: expired");
+    });
   });
 
 });
