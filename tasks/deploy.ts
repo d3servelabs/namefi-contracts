@@ -2,7 +2,7 @@ import { task } from "hardhat/config";
 import type { TaskArguments } from "hardhat/types";
 import { deployByName } from "../utils/deployUtil";
 
-const WAIT_FOR_BLOCK = 3;
+const WAIT_FOR_BLOCK = 6;
 
 task("d3bridge-logic-deploy", "Deploy the logic contract")
     .setAction(async function (taskArguments: TaskArguments, { ethers, run }) {
@@ -17,8 +17,6 @@ task("d3bridge-logic-deploy", "Deploy the logic contract")
 
         console.log(`Contract ${contractName} deployed to ${contract.address}`);
 
-        // wait for a few blocks
-        const WAIT_FOR_BLOCK = 6;
         console.log(`Waiting for ${WAIT_FOR_BLOCK} blocks...`);
         for (let i = 0; i < WAIT_FOR_BLOCK; i++) {
             console.log(`${i} time: ${new Date().toLocaleTimeString()}`);
@@ -33,29 +31,32 @@ task("d3bridge-logic-deploy", "Deploy the logic contract")
     });
 
 task("d3bridge-proxy-deploy", "Deploy Transparent Upgradeable Proxy")
-    .addParam("logic", "The address of the logic contract")
-    .addParam("logicContractName", "The name of the logic contract")
-    .addParam("admin", "The address of the proxyAdmin")
+    .addParam("logicContractName")
+    .addParam("logicAddress")
+    .addParam("adminAddress")
     .setAction(async function (taskArguments: TaskArguments, { ethers, run }) {
+        const signers = await ethers.getSigners();
+        const signer = signers[0];
         const { contract: proxy } = await deployByName(
             ethers,
             "TransparentUpgradeableProxy",
             [
-                taskArguments.logic,
-                taskArguments.admin,
+                taskArguments.logicAddress,
+                taskArguments.adminAddress,
                 // Initialization data
                 [],
-            ]
+            ], 
+            signer
         );
 
         await proxy.deployed();
         let tx2 = proxy.deployTransaction;
         // attach contract to UnsafelyDestroyable
-        const logic = await ethers.getContractAt(
+        const proxyAsLogic = await ethers.getContractAt(
             taskArguments.logicContractName,
-            proxy.address);
-        await logic.initialize();
-
+            proxy.address); 
+        await proxyAsLogic.initialize();
+    
         for (let i = 0; i < WAIT_FOR_BLOCK; i++) {
             console.log(`Block ${i}...`);
             await tx2.wait(i);
@@ -65,8 +66,8 @@ task("d3bridge-proxy-deploy", "Deploy Transparent Upgradeable Proxy")
         await run("verify:verify", {
             address: proxy.address,
             constructorArguments: [
-                taskArguments.logic,
-                taskArguments.admin,
+                taskArguments.logicAddress,
+                taskArguments.adminAddress,
                 // Initialization data
                 [],
             ],
@@ -77,10 +78,13 @@ task("d3bridge-proxy-deploy", "Deploy Transparent Upgradeable Proxy")
 
 task("d3bridge-admin-deploy", "Deploy the ProxyAdmin contract")
     .setAction(async function (taskArguments: TaskArguments, { ethers, run }) {
+        const signers = await ethers.getSigners();
+        const signer = signers[0];
         const { contract: proxyAdmin } = await deployByName(
             ethers,
             "ProxyAdmin",
-            []
+            [],
+            signer
         );
 
         await proxyAdmin.deployed();
