@@ -54,6 +54,7 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY as string,
+      sepolia: process.env.ETHERSCAN_API_KEY as string,
       goerli: process.env.ETHERSCAN_API_KEY as string,
       goerli_blockscout: process.env.ETHERSCAN_API_KEY as string,
       dashboard: process.env.ETHERSCAN_API_KEY as string,
