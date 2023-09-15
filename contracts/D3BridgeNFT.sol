@@ -4,9 +4,6 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "./ExpirableNFT.sol";
 import "./LockableNFT.sol";
 
@@ -23,7 +20,7 @@ contract D3BridgeNFT is
 
     // Currently MINTER_ROLE is used for minting, burning and updating expiration time
     // until we have need more fine-grain control.
-    bytes32 MINTER_ROLE = keccak256("MINTER");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER");
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -53,12 +50,14 @@ contract D3BridgeNFT is
     ) public onlyRole(MINTER_ROLE) {
         uint256 tokenId = normalizedDomainNameToId(domainName);
         _idToDomainNameMap[tokenId] = domainName;
-        require(expirationTime > block.timestamp, "D3BridgeNFT: expired");
+        require(expirationTime > block.timestamp, "D3BridgeNFT: expiration time too early");
         _setExpiration(tokenId, expirationTime);
         _safeMint(to, tokenId);
     }
 
-    function burnByName(string memory domainName) public onlyRole(MINTER_ROLE) {
+    function burnByName(string memory domainName) public 
+        onlyRole(MINTER_ROLE)
+        whenLocked(normalizedDomainNameToId(domainName)) {
         uint256 tokenId = normalizedDomainNameToId(domainName);
         _idToDomainNameMap[tokenId] = "";
         _burn(tokenId);
@@ -71,9 +70,10 @@ contract D3BridgeNFT is
         _safeTransfer(from, to, tokenId, "");
     }
 
-    function _transfer(address from, address to, uint256 tokenId) internal virtual override {
-        require(!isLocked(tokenId), "D3BridgeNFT: locked");
-        require(!_isExpired(tokenId), "D3BridgeNFT: expired");
+    function _transfer(address from, address to, uint256 tokenId) 
+        whenNotLocked(tokenId)
+        whenNotExpired(tokenId)
+        internal virtual override {
         super._transfer(from, to, tokenId);
     }
 
@@ -93,6 +93,16 @@ contract D3BridgeNFT is
 
     function setExpiration(uint256 tokenId, uint256 expirationTime) public override onlyRole(MINTER_ROLE) {
         _setExpiration(tokenId, expirationTime);
+    }
+
+    function lockByName(string memory domainName) public onlyRole(MINTER_ROLE) {
+        uint256 tokenId = normalizedDomainNameToId(domainName);
+        _lock(tokenId);
+    }
+
+    function unlockByName(string memory domainName) public onlyRole(MINTER_ROLE) {
+        uint256 tokenId = normalizedDomainNameToId(domainName);
+        _unlock(tokenId);
     }
 
     function supportsInterface(bytes4 interfaceId)

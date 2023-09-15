@@ -23,6 +23,11 @@ abstract contract LockableNFT {
         require(!_locks[tokenId], "LockableNFT: locked");
         _;
     }
+    
+    modifier whenLocked (uint256 tokenId) {
+        require(_locks[tokenId], "LockableNFT: not locked");
+        _;
+    }
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
