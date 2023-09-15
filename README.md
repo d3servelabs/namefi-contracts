@@ -6,9 +6,9 @@
 ### v0.0.2 (Sepolia)
 | Name       | Address |
 | ---------- | ------- |
-| Logic      | [0x9c290d562553A5610877F2b704E4b14F3367B0ee](https://sepolia.etherscan.io/address/0x9c290d562553A5610877F2b704E4b14F3367B0ee#code) |
+| Logic      | [0x4da21b5c095184C1822014cBc7173a11f9dE56BA](https://sepolia.etherscan.io/address/0x4da21b5c095184C1822014cBc7173a11f9dE56BA#code) |
 | ProxyAdmin | [0xA016886d155D6c82e0Cc59103920802121929F8f](https://sepolia.etherscan.io/address/0xA016886d155D6c82e0Cc59103920802121929F8f#code) |
-| Proxy      | [0xd525e03565d4e1D6B3C937F247131f12f0B95368](https://sepolia.etherscan.io/address/0xd525e03565d4e1D6B3C937F247131f12f0B95368#code) |
+| Proxy      | [0x7B6bEf228F123741446DcFEf030a2E4cee519144](https://sepolia.etherscan.io/address/0x7B6bEf228F123741446DcFEf030a2E4cee519144#code) |
 
 ### v0.0.1 (Goerli)
 | Name       | Address |
