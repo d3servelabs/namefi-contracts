@@ -101,3 +101,37 @@ task("d3bridge-admin-deploy", "Deploy the ProxyAdmin contract")
         }).catch(e => console.log(`Failure ${e} when verifying proxyAdmin at ${proxyAdmin.address}`));
         console.log(`Done verifying proxyAdmin at ${proxyAdmin.address}`);
     });
+
+task("d3bridge-upgrade", "Deploy the ProxyAdmin contract")
+    .addParam("proxyAddress")
+    .addParam("logicAddress")
+    .setAction(async function (taskArguments: TaskArguments, { ethers, run }) {
+        const signers = await ethers.getSigners();
+        const signer = signers[0];
+        const slotIndex = "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"; // AdminAddress https://eips.ethereum.org/EIPS/eip-1967
+        console.log(`Proxy address is ${taskArguments.proxyAddress}`);
+        // get the admin address from the proxy
+        const proxy = await ethers.getContractAt(
+            "TransparentUpgradeableProxy",
+            taskArguments.proxyAddress);
+        // get admin address from storage at slot from ethers
+        const adminAddressBytes32 = await ethers.provider.getStorageAt(
+            taskArguments.proxyAddress,
+            slotIndex);
+        // get last 20 bytes of the address
+        const adminAddress = ethers.utils.getAddress("0x" + adminAddressBytes32.slice(26));
+        
+        console.log(`Admin address is ${adminAddress}`);
+        const admin = await ethers.getContractAt(
+            "ProxyAdmin",
+            adminAddress);
+        let tx = await admin.upgrade(
+            taskArguments.proxyAddress,
+            taskArguments.logicAddress
+        );
+        let rc = await tx.wait();
+        console.log(`Upgrade transaction hash is ${tx.hash}`);
+        console.log(`Done waiting for the confirmation for contract upgrade at ${taskArguments.proxyAddress}`);
+
+
+    });

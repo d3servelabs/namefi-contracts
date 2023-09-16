@@ -121,6 +121,12 @@ describe("D3BridgeNFT", function () {
     expect(await instance.ownerOf(ethers.utils.id(normalizedDomainName))).to.equal(charlie.address);
     expect(await instance.ownerOf(ethers.utils.id("bob.alice.eth"))).to.equal(charlie.address);
 
+    // Verify the tokenURI outputs svg
+    const tokenURI = await instance.tokenURI(ethers.utils.id(normalizedDomainName));
+    const svg = tokenURI;
+    expect(svg).to.not.be.undefined;
+    expect(svg == await instance.svgPart1() + normalizedDomainName + await instance.svgPart2()).to.be.true;
+
     // // Verify that owner can burn
     await expect(instance.connect(charlie).burnByName(normalizedDomainName))
       .to.be.revertedWith(/AccessControl: account.*missing role.*/);
