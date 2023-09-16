@@ -6,7 +6,7 @@
 ### v0.0.2 (Sepolia)
 | Name       | Address |
 | ---------- | ------- |
-| Logic      | [0xD5db588B87Bfc955e1DA399e96501b965E35104b](https://sepolia.etherscan.io/address/0xD5db588B87Bfc955e1DA399e96501b965E35104b#code) |
+| Logic      | [0x4da21b5c095184C1822014cBc7173a11f9dE56BA](https://sepolia.etherscan.io/address/0x4da21b5c095184C1822014cBc7173a11f9dE56BA#code) |
 | ProxyAdmin | [0xA016886d155D6c82e0Cc59103920802121929F8f](https://sepolia.etherscan.io/address/0xA016886d155D6c82e0Cc59103920802121929F8f#code) |
 | Proxy      | [0x7B6bEf228F123741446DcFEf030a2E4cee519144](https://sepolia.etherscan.io/address/0x7B6bEf228F123741446DcFEf030a2E4cee519144#code) |
 
