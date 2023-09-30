@@ -15,10 +15,10 @@ contract D3BridgeServiceCredit is
         ERC20BurnableUpgradeable, 
         PausableUpgradeable, 
         AccessControlUpgradeable {
-    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER");
 
-    uint256 public constant CHARGE = 20 * 10 ** 18; // 20 D3BSC
+    uint256 public constant CHARGE = 20 * 10 ** 18; // 20 D3BSC // TODO: decide charge amount
     
     /// A constant address that is used to identify the D3BridgeNFT contract.
     D3BridgeNFT public d3BridgeNftAddress;
@@ -59,13 +59,18 @@ contract D3BridgeServiceCredit is
         super._beforeTokenTransfer(from, to, amount);
     }
 
-    function minterRoleChargeAndSafeMintByName(
+    function payAndSafeMintByName(
         address mintTo, 
         string memory domainName,
         uint256 expirationTime // unix timestamp
-    ) public payable {
-        require(balanceOf(mintTo) >= CHARGE, "D3BridgeServiceCredit: insufficient balance");
-        _transfer(mintTo, address(this), CHARGE); // TODO(audit): check if this is safe
+    ) public {
+        require(balanceOf(_msgSender()) >= CHARGE, "D3BridgeServiceCredit: insufficient balance");
+        _burn(_msgSender(), CHARGE); // TODO(audit): check if this is safe
         d3BridgeNftAddress.safeMintByName(mintTo, domainName, expirationTime);
+    }
+
+    function setD3BridgeNFTAddress(D3BridgeNFT _d3BridgeNftAddress) 
+            public onlyRole(DEFAULT_ADMIN_ROLE) {
+        d3BridgeNftAddress = _d3BridgeNftAddress;
     }
 }
