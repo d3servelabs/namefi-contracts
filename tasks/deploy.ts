@@ -5,17 +5,17 @@ import { deployByName } from "../utils/deployUtil";
 const WAIT_FOR_BLOCK = 6;
 
 task("d3bridge-logic-deploy", "Deploy the logic contract")
+    .addParam("logicContractName")
     .setAction(async function (taskArguments: TaskArguments, { ethers, run }) {
-        const contractName = "D3BridgeNFT";
         const signers = await ethers.getSigners();
         const signer = signers[0];
         const { contract, tx } = await deployByName(
             ethers,
-            contractName,
+            taskArguments.logicContractName,
             [],
             signer);
 
-        console.log(`Contract ${contractName} deployed to ${contract.address}`);
+        console.log(`Contract ${taskArguments.logicContractName} deployed to ${contract.address}`);
 
         console.log(`Waiting for ${WAIT_FOR_BLOCK} blocks...`);
         for (let i = 0; i < WAIT_FOR_BLOCK; i++) {
@@ -27,7 +27,7 @@ task("d3bridge-logic-deploy", "Deploy the logic contract")
         await run("verify:verify", {
             address: contract.address
         });
-        console.log(`Contract ${contractName} verified at ${contract.address}.`);
+        console.log(`Contract ${taskArguments.logicContractName} verified at ${contract.address}.`);
     });
 
 task("d3bridge-proxy-deploy", "Deploy Transparent Upgradeable Proxy")
@@ -55,7 +55,7 @@ task("d3bridge-proxy-deploy", "Deploy Transparent Upgradeable Proxy")
         const proxyAsLogic = await ethers.getContractAt(
             taskArguments.logicContractName,
             proxy.address); 
-        await proxyAsLogic.initialize();
+        await (proxyAsLogic as any).initialize();
     
         for (let i = 0; i < WAIT_FOR_BLOCK; i++) {
             console.log(`Block ${i}...`);

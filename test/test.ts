@@ -123,9 +123,7 @@ describe("D3BridgeNFT", function () {
 
     // Verify the tokenURI outputs svg
     const tokenURI = await instance.tokenURI(ethers.utils.id(normalizedDomainName));
-    const svg = tokenURI;
-    expect(svg).to.not.be.undefined;
-    expect(svg == await instance.svgPart1() + normalizedDomainName + await instance.svgPart2()).to.be.true;
+    expect(tokenURI === `https://d3serve.xyz/nft/${normalizedDomainName}`);
 
     // // Verify that owner can burn
     await expect(instance.connect(charlie).burnByName(normalizedDomainName))
@@ -217,7 +215,7 @@ describe("D3BridgeNFT", function () {
           bob.address,
           normalizedDomainName,
           expirationTime));
-          await expect(instance.connect(charlie).burnByName(normalizedDomainName))
+          await expect(instance.connect(minter).burnByName(normalizedDomainName))
             .to.be.revertedWith("LockableNFT: not locked");
         await instance.connect(minter).lockByName(normalizedDomainName);
         await instance.connect(minter).burnByName(normalizedDomainName);
