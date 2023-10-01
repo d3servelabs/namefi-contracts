@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./ExpirableNFT.sol";
 import "./LockableNFT.sol";
+import "./IChargeableERC20.sol";
 
 /// @custom:security-contact team@d3serve.xyz
 /// @custom:version V0.0.2
@@ -15,12 +16,14 @@ contract D3BridgeNFT is
         AccessControlUpgradeable, 
         ExpirableNFT,
         LockableNFT {
-    string private _baseUriStr;
-    mapping(uint256 id => string) private _idToDomainNameMap;
+    string private _baseUriStr;  // Storage Slot
+    mapping(uint256 id => string) private _idToDomainNameMap; //  Storage Slot
+    IChargeableERC20 public _d3BridgeServiceCreditContract;  // Storage Slot
 
     // Currently MINTER_ROLE is used for minting, burning and updating expiration time
     // until we have need more fine-grain control.
     bytes32 public constant MINTER_ROLE = keccak256("MINTER");
+    uint256 public constant CHARGE_PER_YEAR = 20 * 10 ** 18; // 20 D3BSC // TODO: decide charge amount
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -43,16 +46,45 @@ contract D3BridgeNFT is
         return uint256(keccak256(abi.encodePacked(domainName)));
     }
 
-    function safeMintByName(
+    function _safeMintByName(
         address to, 
         string memory domainName,
         uint256 expirationTime // unix timestamp
-    ) public onlyRole(MINTER_ROLE) {
+    ) internal virtual onlyRole(MINTER_ROLE) {
         uint256 tokenId = normalizedDomainNameToId(domainName);
         _idToDomainNameMap[tokenId] = domainName;
         require(expirationTime > block.timestamp, "D3BridgeNFT: expiration time too early");
         _setExpiration(tokenId, expirationTime);
         _safeMint(to, tokenId);
+    }
+
+    function safeMintByNameNoCharge(
+        address to, 
+        string memory domainName,
+        uint256 expirationTime // unix timestamp
+    ) external virtual onlyRole(MINTER_ROLE) {
+        _safeMintByName(to, domainName, expirationTime);
+    }
+
+    function safeMintByNameWithCharge(
+        address to,
+        string memory domainName,
+        uint256 expirationTime, // unix timestamp
+        address chargee,
+        bytes memory /*extraData*/
+    ) external virtual onlyRole(MINTER_ROLE) {
+        // TODO: audit to protect from reentry attack
+        bytes32 result = _d3BridgeServiceCreditContract.charge(
+            address(this), 
+            chargee, 
+            CHARGE_PER_YEAR, 
+            // add string reason "D3BridgeNFT: mint" + domainName in one string
+            string(abi.encodePacked("D3BridgeNFT: mint ", domainName)),
+            bytes("")
+        );
+
+        require(result == keccak256("SUCCESS"), "D3BridgeNFT: charge failed");
+        _safeMintByName(to, domainName, expirationTime);
     }
 
     function burnByName(string memory domainName) public 
@@ -112,5 +144,9 @@ contract D3BridgeNFT is
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
+    }
+
+    function setServiceCreditContract(address addr) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        _d3BridgeServiceCreditContract = IChargeableERC20(addr);
     }
 }

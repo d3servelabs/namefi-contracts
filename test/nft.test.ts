@@ -87,14 +87,14 @@ describe("D3BridgeNFT", function () {
       60 * 60 * 24 * 365 * 10; // 10 days
 
     // Verify that owner can mint
-    await expect(instance.connect(alice).safeMintByName(
+    await expect(instance.connect(alice).safeMintByNameNoCharge(
       bob.address,
       normalizedDomainName,
       expirationTime))
       .to.be.revertedWith(/AccessControl: account.*missing role.*/);
 
     const tx = await instance.connect(minter)
-      .safeMintByName(
+      .safeMintByNameNoCharge(
         bob.address,
         normalizedDomainName,
         expirationTime
@@ -152,7 +152,7 @@ describe("D3BridgeNFT", function () {
       const expirationTime =
         (await ethers.provider.getBlock("latest")).timestamp - 1;
   
-      await expect(instance.connect(minter).safeMintByName(
+      await expect(instance.connect(minter).safeMintByNameNoCharge(
         bob.address,
         normalizedDomainName,
         expirationTime))
@@ -170,7 +170,7 @@ describe("D3BridgeNFT", function () {
         (await ethers.provider.getBlock("latest")).timestamp + 10;
   
       const tx = await instance.connect(minter)
-        .safeMintByName(
+        .safeMintByNameNoCharge(
           bob.address,
           normalizedDomainName,
           expirationTime
@@ -192,7 +192,7 @@ describe("D3BridgeNFT", function () {
       const expirationTime =
         (await ethers.provider.getBlock("latest")).timestamp + 1000;
   
-      await expect(instance.connect(minter).safeMintByName(
+      await expect(instance.connect(minter).safeMintByNameNoCharge(
         bob.address,
         normalizedDomainName,
         expirationTime));
@@ -211,7 +211,7 @@ describe("D3BridgeNFT", function () {
   
       const expirationTime =
         (await ethers.provider.getBlock("latest")).timestamp + 100;
-        await expect(instance.connect(minter).safeMintByName(
+        await expect(instance.connect(minter).safeMintByNameNoCharge(
           bob.address,
           normalizedDomainName,
           expirationTime));

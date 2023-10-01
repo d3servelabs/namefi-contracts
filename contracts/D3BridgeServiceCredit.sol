@@ -6,7 +6,10 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20Burnable
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
+import "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
 import "./D3BridgeNFT.sol";
+import "./IChargeableERC20.sol";
 
 /// @custom:security-contact security@d3serve.xyz
 contract D3BridgeServiceCredit is 
@@ -14,14 +17,11 @@ contract D3BridgeServiceCredit is
         ERC20Upgradeable, 
         ERC20BurnableUpgradeable, 
         PausableUpgradeable, 
-        AccessControlUpgradeable {
+        AccessControlUpgradeable,
+        IChargeableERC20 {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER");
-
-    uint256 public constant CHARGE = 20 * 10 ** 18; // 20 D3BSC // TODO: decide charge amount
-    
-    /// A constant address that is used to identify the D3BridgeNFT contract.
-    D3BridgeNFT public d3BridgeNftAddress;
+    bytes32 public constant CHARGER_ROLE = keccak256("CHARGER");
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -59,18 +59,37 @@ contract D3BridgeServiceCredit is
         super._beforeTokenTransfer(from, to, amount);
     }
 
+    // TODO: update to more general approach of ERC-1363
     function payAndSafeMintByName(
+        D3BridgeNFT d3BridgeNftAddress,
         address mintTo, 
         string memory domainName,
         uint256 expirationTime // unix timestamp
     ) public {
+        uint256 CHARGE = 20 * 10 ** 18; // 20 D3BSC // TODO: decide charge amount
         require(balanceOf(_msgSender()) >= CHARGE, "D3BridgeServiceCredit: insufficient balance");
         _burn(_msgSender(), CHARGE); // TODO(audit): check if this is safe
-        d3BridgeNftAddress.safeMintByName(mintTo, domainName, expirationTime);
+        d3BridgeNftAddress.safeMintByNameNoCharge(mintTo, domainName, expirationTime);
     }
 
-    function setD3BridgeNFTAddress(D3BridgeNFT _d3BridgeNftAddress) 
-            public onlyRole(DEFAULT_ADMIN_ROLE) {
-        d3BridgeNftAddress = _d3BridgeNftAddress;
+    function charge(
+            address charger,
+            address chargee, 
+            uint256 amount, 
+            string memory reason, 
+            bytes memory extra) external
+        returns (bytes32) {
+        // We might upgrade this logic to enable endorsable charges, so charger doesn't have to be the msg.sender
+        require(charger == _msgSender(), "D3BridgeServiceCredit: must be called by a charger");
+
+        require(hasRole(CHARGER_ROLE, charger), "D3BridgeServiceCredit: must have charger role");
+
+        // chargee has more balance than the charge amount
+        require(balanceOf(chargee) >= amount, "D3BridgeServiceCredit: insufficient balance");
+
+        // require the caller to have the CHARGER_ROLE
+        _transfer(chargee, charger, amount); // TODO(audit): check if this is safe against reentry attack
+        emit Charge(charger, chargee, amount, reason, extra);
+        return keccak256("SUCCESS");
     }
 }
