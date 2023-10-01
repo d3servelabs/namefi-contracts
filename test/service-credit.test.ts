@@ -165,13 +165,8 @@ describe("D3BridgeServiceCredit", function () {
             alice.address, // chargee
             []
           );
-        // const rc = await tx.wait();
-        // const event = rc.events?.find((e: any) => e.event === "Transfer");
-        // expect(event).to.not.be.undefined;
-        // expect(event?.args?.to).to.equal(ethers.constants.AddressZero);
-        // expect(event?.args?.from).to.equal(alice.address);
-        // expect(await nftInstance.ownerOf(ethers.utils.id(normalizedDomainName))).to.equal(bob.address);
-        // expect(await nftInstance.ownerOf(ethers.utils.id("bob.alice.eth"))).to.equal(bob.address);
-        // expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("80", 18));
+        expect(await nftInstance.ownerOf(ethers.utils.id(normalizedDomainName))).to.equal(bob.address);
+        expect(await nftInstance.ownerOf(ethers.utils.id("bob.alice.eth"))).to.equal(bob.address);
+        expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("80", 18));
   });
 });
