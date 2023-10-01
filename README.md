@@ -7,10 +7,6 @@
 ## Deployments
 
 ### v0.0.3 (Sepolia)
-Successfully verified contract D3BridgeNFT on Etherscan.
-https://sepolia.etherscan.io/address/0x406bF616b6694273cC9E789C2FF46Ac3f4B68dF8#code
-Contract D3BridgeNFT verified at 0x406bF616b6694273cC9E789C2FF46Ac3f4B68dF8.
-
 
 | Name                | Address                                                                                                                            |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
