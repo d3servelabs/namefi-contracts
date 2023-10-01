@@ -66,6 +66,14 @@ contract D3BridgeNFT is
         _safeMintByName(to, domainName, expirationTime);
     }
 
+    function _currentChargePerYear(string memory /*domainName*/) internal pure returns (uint256) {
+        return CHARGE_PER_YEAR;
+    }
+
+    function currentChargeAmountPerYear(string memory domainName) external pure returns (uint256) {
+        return _currentChargePerYear(domainName);
+    }
+
     function safeMintByNameWithCharge(
         address to,
         string memory domainName,
@@ -73,11 +81,12 @@ contract D3BridgeNFT is
         address chargee,
         bytes memory /*extraData*/
     ) external virtual onlyRole(MINTER_ROLE) {
+        require(_d3BridgeServiceCreditContract != IChargeableERC20(address(0)), "D3BridgeNFT: service credit contract not set");
         // TODO: audit to protect from reentry attack
         bytes32 result = _d3BridgeServiceCreditContract.charge(
             address(this), 
             chargee, 
-            CHARGE_PER_YEAR, 
+            _currentChargePerYear(domainName), 
             // add string reason "D3BridgeNFT: mint" + domainName in one string
             string(abi.encodePacked("D3BridgeNFT: mint ", domainName)),
             bytes("")
