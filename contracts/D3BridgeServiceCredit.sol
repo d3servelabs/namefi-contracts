@@ -12,6 +12,7 @@ import "./D3BridgeNFT.sol";
 import "./IChargeableERC20.sol";
 
 /// @custom:security-contact security@d3serve.xyz
+/// @custom:version v0
 contract D3BridgeServiceCredit is 
         Initializable, 
         ERC20Upgradeable, 
