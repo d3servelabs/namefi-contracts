@@ -6,6 +6,32 @@
 - *SC*: ServiceCredit
 ## Deployments
 
+### ABI for NFT
+
+```
+[
+    'function safeMintByNameNoCharge(address to, string memory domainName, uint256 expirationTime )',
+    'function safeMintByNameWithCharge(address to, string memory domainName, uint256 expirationTime, address chargee, bytes memory extraData)',
+    'function balanceOf(address owner) public view returns (uint256)',
+    'function ownerOf(uint256 tokenId) public view returns (address)',
+    'function name() public view returns (string memory)',
+    'function tokenURI(uint256 tokenId) public view returns (string memory)',
+    'function idToNormalizedDomainName(uint256 tokenId) public view returns (string memory)',
+    'function normalizedDomainNameToId(string memory domainName) public pure returns (uint256)',
+    'function burnByName(string memory domainName) public',
+    'function lockByName(string memory domainName) public',
+    'function unlockByName(string memory domainName) public',
+
+    /*region Lockable*/
+    'function isLocked(uint256 tokenId, bytes32 calldata extra) public view returns (bool)',
+
+    /*endregion Lockable*/
+]
+```
+### ABI for ERC20
+
+
+
 ### v0.0.3 (Sepolia)
 
 | Name                | Address                                                                                                                            |

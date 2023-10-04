@@ -2,7 +2,6 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { deployByName } from "../utils/deployUtil";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
-import { exec } from "child_process";
 
 describe("D3BridgeNFT", function () {
   const DEFAULT_ADMIN_ROLE = ethers.utils.hexZeroPad("0x00", 32);
@@ -182,6 +181,37 @@ describe("D3BridgeNFT", function () {
   });
 
   describe("Lock", function() {
+    it("Should yield an event of Lock or Unlock", async function () {
+      const { instance, signers, minter } = await loadFixture(deployFixture);
+      const alice = signers[1];
+      const bob = signers[2];
+      const charlie = signers[3];
+      const normalizedDomainName = "bob.alice.eth";
+  
+      const expirationTime =
+        (await ethers.provider.getBlock("latest")).timestamp + 1000;
+  
+      await expect(instance.connect(minter).safeMintByNameNoCharge(
+        bob.address,
+        normalizedDomainName,
+        expirationTime));
+      await expect(instance.connect(bob).safeTransferFromByName(bob.address, charlie.address, normalizedDomainName));
+      let tx = await instance.connect(minter).lockByName(normalizedDomainName);
+      let rc = await tx.wait();
+      let event = rc.events?.find((e: any) => e.event === "Lock");
+      expect(event).to.not.be.undefined;
+      expect(event?.args?.tokenId).to.equal(ethers.utils.id(normalizedDomainName));
+
+      await expect(instance.connect(charlie).safeTransferFromByName(charlie.address, bob.address, normalizedDomainName))
+        .to.be.revertedWith("LockableNFT: locked");
+
+      let tx2 = await instance.connect(minter).unlockByName(normalizedDomainName);
+      let rc2 = await tx2.wait();
+      let event2 = rc2.events?.find((e: any) => e.event === "Unlock");
+      expect(event2).to.not.be.undefined;
+      expect(event2?.args?.tokenId).to.equal(ethers.utils.id(normalizedDomainName));
+    });
+
     it("Should be respected at transfer", async function () {
       const { instance, signers, minter } = await loadFixture(deployFixture);
       const alice = signers[1];

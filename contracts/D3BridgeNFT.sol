@@ -8,8 +8,28 @@ import "./ExpirableNFT.sol";
 import "./LockableNFT.sol";
 import "./IChargeableERC20.sol";
 
-/// @custom:security-contact team@d3serve.xyz
-/// @custom:version V0.0.2
+/** @custom:security-contact team@d3serve.xyz
+ * @custom:version V0.0.2
+ * The ABI of this interface in javascript array such as
+```
+[
+    "function idToNormalizedDomainName(uint256 tokenId) public view returns (string memory)",
+    "function normalizedDomainNameToId(string memory domainName) public pure returns (uint256)",
+    "function safeMintByNameNoCharge(address to, string memory domainName, uint256 expirationTime) external virtual",
+    "function safeMintByNameWithCharge(address to, string memory domainName, uint256 expirationTime, address chargee, bytes memory extraData) external virtual",
+    "function burnByName(string memory domainName) external",
+    "function safeTransferFromByName(address from, address to, string memory domainName) public",
+    "function setBaseURI(string memory baseUriStr) public",
+    "function setExpiration(uint256 tokenId, uint256 expirationTime) public",
+    "function lock(uint256 tokenId, bytes calldata extra) external payable virtual",
+    "function lockByName(string memory domainName) external",
+    "function unlock(uint256 tokenId, bytes calldata extra) external payable virtual",
+    "function unlockByName(string memory domainName) external",
+    "function currentChargeAmountPerYear(string memory domainName) external pure returns (uint256)",
+    "function setServiceCreditContract(address addr) public"
+]
+```
+*/
 contract D3BridgeNFT is 
         Initializable, 
         ERC721Upgradeable, 
@@ -98,7 +118,7 @@ contract D3BridgeNFT is
 
     function burnByName(string memory domainName) public 
         onlyRole(MINTER_ROLE)
-        whenLocked(normalizedDomainNameToId(domainName)) {
+        whenLocked(normalizedDomainNameToId(domainName), bytes("")) {
         uint256 tokenId = normalizedDomainNameToId(domainName);
         _idToDomainNameMap[tokenId] = "";
         _burn(tokenId);
@@ -112,7 +132,7 @@ contract D3BridgeNFT is
     }
 
     function _transfer(address from, address to, uint256 tokenId) 
-        whenNotLocked(tokenId)
+        whenNotLocked(tokenId, bytes(""))
         whenNotExpired(tokenId)
         internal virtual override {
         super._transfer(from, to, tokenId);
@@ -136,14 +156,21 @@ contract D3BridgeNFT is
         _setExpiration(tokenId, expirationTime);
     }
 
-    function lockByName(string memory domainName) public onlyRole(MINTER_ROLE) {
+    function lock(uint256 tokenId, bytes calldata extra) external payable override onlyRole(MINTER_ROLE) {
+        _lock(tokenId, extra);
+    }
+    function lockByName(string memory domainName) external onlyRole(MINTER_ROLE) {
         uint256 tokenId = normalizedDomainNameToId(domainName);
-        _lock(tokenId);
+        _lock(tokenId, bytes(""));
     }
 
-    function unlockByName(string memory domainName) public onlyRole(MINTER_ROLE) {
+    function unlock(uint256 tokenId, bytes calldata extra) external payable override onlyRole(MINTER_ROLE) {
+        _unlock(tokenId, extra);
+    }
+
+    function unlockByName(string memory domainName) external onlyRole(MINTER_ROLE) {
         uint256 tokenId = normalizedDomainNameToId(domainName);
-        _unlock(tokenId);
+        _unlock(tokenId, bytes(""));
     }
 
     function supportsInterface(bytes4 interfaceId)
