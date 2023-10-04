@@ -9,7 +9,7 @@ import "./LockableNFT.sol";
 import "./IChargeableERC20.sol";
 
 /** @custom:security-contact team@d3serve.xyz
- * @custom:version V0.0.2
+ * @custom:version V0.0.4
  * The ABI of this interface in javascript array such as
 ```
 [

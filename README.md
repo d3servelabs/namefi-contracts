@@ -24,12 +24,21 @@
 
     /*region Lockable*/
     'function isLocked(uint256 tokenId, bytes32 calldata extra) public view returns (bool)',
-
+    
     /*endregion Lockable*/
 ]
 ```
 ### ABI for ERC20
 
+### Latest (Sepolia)
+
+| Name                | Address                                                                                                                            |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| NFT Proxy           | [0x7B6bEf228F123741446DcFEf030a2E4cee519144](https://sepolia.etherscan.io/address/0x7B6bEf228F123741446DcFEf030a2E4cee519144#code) |
+| NFT Logic(v.0.0.4)  | [0xDECd6E2d71467497DA870bA00d0E40e78429C648](https://sepolia.etherscan.io/address/0xDECd6E2d71467497DA870bA00d0E40e78429C648#code) |
+| SC Proxy            | [0x7dce171E04AdB3a2769918380B7604c685242320](https://sepolia.etherscan.io/address/0x7dce171E04AdB3a2769918380B7604c685242320#code) |
+| SC Logic            | [0x7c09E3cdfA63fBfaBAfbaB342fdFE31845a20439](https://sepolia.etherscan.io/address/0x7c09E3cdfA63fBfaBAfbaB342fdFE31845a20439#code) |
+| ProxyAdmin (both)   | [0xA016886d155D6c82e0Cc59103920802121929F8f](https://sepolia.etherscan.io/address/0xA016886d155D6c82e0Cc59103920802121929F8f#code) |
 
 
 ### v0.0.3 (Sepolia)
