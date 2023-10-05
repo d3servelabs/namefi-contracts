@@ -7,10 +7,11 @@
     "test": "hardhat test",
     "compile": "hardhat compile",
     "coverage": "hardhat coverage",
-    "clean": "hardhat clean"
+    "clean": "hardhat clean",
+    "gen712": "eip712-codegen --input d3bridge-struct.js --entryPoints DnsUpdateRequest > contracts/gen/D3BridgeStruct.sol"
   },
   "author": "dev-team@d3serve.xyz",
-  "license": "GPL-3.0",
+  "license": "Proprietary",
   "devDependencies": {
     "@ensdomains/ens-contracts": "^0.0.20",
     "@ercref/contracts": "^0.1.0",
@@ -41,6 +42,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts-upgradeable": "^4.9.3",
+    "@d3serve/eip712-codegen": "6.0.8-patch1",
     "prb-math": "^2.4.3"
   }
 }

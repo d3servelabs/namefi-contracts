@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./ExpirableNFT.sol";
 import "./LockableNFT.sol";
 import "./IChargeableERC20.sol";
-
+import "./D3BridgeStruct.sol";
 /** @custom:security-contact team@d3serve.xyz
  * @custom:version V0.0.4
  * The ABI of this interface in javascript array such as
@@ -35,7 +35,8 @@ contract D3BridgeNFT is
         ERC721Upgradeable, 
         AccessControlUpgradeable, 
         ExpirableNFT,
-        LockableNFT {
+        LockableNFT,
+        ERC1271Contract {
     string private _baseUriStr;  // Storage Slot
     mapping(uint256 id => string) private _idToDomainNameMap; //  Storage Slot
     IChargeableERC20 public _d3BridgeServiceCreditContract;  // Storage Slot
