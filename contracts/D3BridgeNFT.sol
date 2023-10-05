@@ -36,7 +36,7 @@ contract D3BridgeNFT is
         AccessControlUpgradeable, 
         ExpirableNFT,
         LockableNFT,
-        ERC1271Contract {
+        EIP712Decoder {
     string private _baseUriStr;  // Storage Slot
     mapping(uint256 id => string) private _idToDomainNameMap; //  Storage Slot
     IChargeableERC20 public _d3BridgeServiceCreditContract;  // Storage Slot
@@ -185,5 +185,14 @@ contract D3BridgeNFT is
 
     function setServiceCreditContract(address addr) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _d3BridgeServiceCreditContract = IChargeableERC20(addr);
+    }
+
+    function getDomainHash() public view override virtual returns (bytes32) {
+        EIP712Domain memory _input;
+        _input.name = "D3Bridge";
+        _input.version = "1";
+        _input.chainId = block.chainid;
+        _input.verifyingContract = address(this);
+        return getEip712DomainPacketHash(_input);
     }
 }
