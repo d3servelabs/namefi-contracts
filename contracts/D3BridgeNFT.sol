@@ -33,13 +33,13 @@ import "./D3BridgeStruct.sol";
 ```
 */
 contract D3BridgeNFT is 
-    IERC5267Upgradeable,
         Initializable, 
         ERC721Upgradeable, 
         AccessControlUpgradeable, 
         ExpirableNFT,
         LockableNFT,
-        EIP712Decoder {
+        EIP712Decoder,
+        IERC5267Upgradeable {
     string private _baseUriStr;  // Storage Slot
     mapping(uint256 id => string) private _idToDomainNameMap; //  Storage Slot
     IChargeableERC20 public _d3BridgeServiceCreditContract;  // Storage Slot
