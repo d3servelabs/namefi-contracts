@@ -5,13 +5,14 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC5267Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/SignatureCheckerUpgradeable.sol";
 
 import "./ExpirableNFT.sol";
 import "./LockableNFT.sol";
 import "./IChargeableERC20.sol";
 import "./D3BridgeStruct.sol";
 /** @custom:security-contact team@d3serve.xyz
- * @custom:version V0.0.5
+ * @custom:version V0.0.6
  * The ABI of this interface in javascript array such as
 ```
 [
@@ -50,7 +51,7 @@ contract D3BridgeNFT is
     uint256 public constant CHARGE_PER_YEAR = 20 * 10 ** 18; // 20 D3BSC // TODO: decide charge amount
     string public constant CONTRACT_NAME = "D3BridgeNFT";
     string public constant CONTRACT_SYMBOL = "D3B";
-    string public constant CURRENT_VERSION = "v0.0.5";
+    string public constant CURRENT_VERSION = "v0.0.6";
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -185,7 +186,8 @@ contract D3BridgeNFT is
         override(ERC721Upgradeable, AccessControlUpgradeable)
         returns (bool)
     {
-        return super.supportsInterface(interfaceId) || interfaceId == type(IERC5267Upgradeable).interfaceId;
+        return super.supportsInterface(interfaceId) 
+            || interfaceId == type(IERC5267Upgradeable).interfaceId;
     }
 
     function setServiceCreditContract(address addr) public onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -223,4 +225,44 @@ contract D3BridgeNFT is
                 new uint256[](0)
             );
         }
+
+    bytes32 public constant VALID_SIG_BY_ID_MAGIC_VALUE = keccak256("VALID_SIG_BY_ID_MAGIC_VALUE");
+    bytes32 public constant VALID_SIG_BY_ID_BAD_VALUE = keccak256("VALID_SIG_BY_ID_BAD_VALUE");
+    function _isValidSignatureByTokenId(
+        uint256 tokenId,
+        address signer,
+        bytes32 digest,
+        bytes memory siganture,
+        bytes memory /*extraData*/
+    ) internal view returns (bytes32 magicValue) {
+        require(_exists(tokenId), "D3BridgeNFT: URI query for nonexistent token");
+        require(_isApprovedOrOwner(signer, tokenId), "D3BridgeNFT: transfer caller is not owner nor approved");
+        if (SignatureCheckerUpgradeable.isValidSignatureNow(signer, digest, siganture)) {
+            return VALID_SIG_BY_ID_MAGIC_VALUE;
+        } else {
+            return VALID_SIG_BY_ID_BAD_VALUE;
+        }
+    }
+
+    function isValidSignatureByTokenId(
+        uint256 tokenId,
+        address signer,
+        bytes32 digest,
+        bytes memory siganture,
+        bytes calldata /*extraData*/
+    ) external view returns (bytes32 magicValue) {
+        return _isValidSignatureByTokenId(tokenId, signer, digest, siganture, bytes(""));
+    }
+
+    function isValidSignatureByName(
+        string memory name,
+        address signer,
+        bytes32 digest,
+        bytes memory siganture,
+        bytes calldata /*extraData*/
+    ) external view returns (bytes32 magicValue) {
+        uint256 id = normalizedDomainNameToId(name);
+        return _isValidSignatureByTokenId(id, signer, digest, siganture, bytes(""));
+    }
+
 }
