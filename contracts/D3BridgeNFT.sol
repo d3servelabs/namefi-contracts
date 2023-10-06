@@ -4,12 +4,14 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/interfaces/IERC5267Upgradeable.sol";
+
 import "./ExpirableNFT.sol";
 import "./LockableNFT.sol";
 import "./IChargeableERC20.sol";
-
+import "./D3BridgeStruct.sol";
 /** @custom:security-contact team@d3serve.xyz
- * @custom:version V0.0.4
+ * @custom:version V0.0.5
  * The ABI of this interface in javascript array such as
 ```
 [
@@ -35,7 +37,9 @@ contract D3BridgeNFT is
         ERC721Upgradeable, 
         AccessControlUpgradeable, 
         ExpirableNFT,
-        LockableNFT {
+        LockableNFT,
+        EIP712Decoder,
+        IERC5267Upgradeable {
     string private _baseUriStr;  // Storage Slot
     mapping(uint256 id => string) private _idToDomainNameMap; //  Storage Slot
     IChargeableERC20 public _d3BridgeServiceCreditContract;  // Storage Slot
@@ -44,14 +48,16 @@ contract D3BridgeNFT is
     // until we have need more fine-grain control.
     bytes32 public constant MINTER_ROLE = keccak256("MINTER");
     uint256 public constant CHARGE_PER_YEAR = 20 * 10 ** 18; // 20 D3BSC // TODO: decide charge amount
-
+    string public constant CONTRACT_NAME = "D3BridgeNFT";
+    string public constant CONTRACT_SYMBOL = "D3B";
+    string public constant CURRENT_VERSION = "v0.0.5";
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
     function initialize() initializer public {
-        __ERC721_init("D3BridgeNFT", "D3B");
+        __ERC721_init(CONTRACT_NAME, CONTRACT_SYMBOL);
         __AccessControl_init();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
@@ -179,10 +185,42 @@ contract D3BridgeNFT is
         override(ERC721Upgradeable, AccessControlUpgradeable)
         returns (bool)
     {
-        return super.supportsInterface(interfaceId);
+        return super.supportsInterface(interfaceId) || interfaceId == type(IERC5267Upgradeable).interfaceId;
     }
 
     function setServiceCreditContract(address addr) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _d3BridgeServiceCreditContract = IChargeableERC20(addr);
     }
+
+    function getDomainHash() public view override virtual returns (bytes32) {
+        EIP712Domain memory _input;
+        _input.name = CONTRACT_NAME;
+        _input.version = CURRENT_VERSION;
+        _input.chainId = block.chainid;
+        _input.verifyingContract = address(this);
+        return getEip712DomainPacketHash(_input);
+    }
+
+    function eip712Domain()
+        external
+        view
+        returns (
+            bytes1 fields,
+            string memory name,
+            string memory version,
+            uint256 chainId,
+            address verifyingContract,
+            bytes32 salt,
+            uint256[] memory extensions
+        ) {
+            return (
+                hex"0f", // 01111
+                CONTRACT_NAME,
+                CURRENT_VERSION,
+                block.chainid,
+                address(this),
+                bytes32(0),
+                new uint256[](0)
+            );
+        }
 }

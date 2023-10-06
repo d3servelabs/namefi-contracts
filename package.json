@@ -1,16 +1,16 @@
 {
   "name": "d3bridge-nft",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
     "compile": "hardhat compile",
     "coverage": "hardhat coverage",
-    "clean": "hardhat clean"
+    "clean": "hardhat clean",
+    "gen712": "eip712-codegen --input d3bridge-struct.js --entryPoints DnsUpdateRequest > contracts/gen/D3BridgeStruct.sol"
   },
   "author": "dev-team@d3serve.xyz",
-  "license": "GPL-3.0",
   "devDependencies": {
     "@ensdomains/ens-contracts": "^0.0.20",
     "@ercref/contracts": "^0.1.0",
@@ -40,6 +40,7 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
+    "@d3serve/eip712-codegen": "6.0.8-patch2",
     "@openzeppelin/contracts-upgradeable": "^4.9.3",
     "prb-math": "^2.4.3"
   }
