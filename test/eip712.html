@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>MetaMask 10.0.1 EIP-712 issue</title>
+    <meta charset="UTF-8" />
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
+        type="application/javascript"></script>
+    <script>
+      const start = async () => {
+        try {
+          const CONTRACT_ADDRESS = "0x7B6bEf228F123741446DcFEf030a2E4cee519144";
+          const CHAIN_ID = 11155111;
+          const etherem = window.ethereum;
+          await ethereum.request({ method: 'eth_requestAccounts' });
+          // A Web3Provider wraps a standard Web3 provider, which is
+          // what MetaMask injects as window.ethereum into each page
+          const provider = new ethers.providers.Web3Provider(window.ethereum)
+          const abi = [
+            "function getDigest(DnsUpdateRequest _message) public view returns (bytes32)",
+          ];
+          const chainId = CHAIN_ID;
+            // attach to the contract address
+            const contractInstance = new ethers.Contract(
+                CONTRACT_ADDRESS,
+                abi,
+                provider
+            );
+            const signer = await provider.getSigner();
+
+            const typedMessage = {
+                primaryType: "DnsUpdateRequest",
+                domain: {
+                name: "D3Bridge",
+
+                // should fetch https://sepolia.etherscan.io/address/0x7B6bEf228F123741446DcFEf030a2E4cee519144#readProxyContract#F4
+                version: "v0.0.6", // don't forget to update this based on
+                chainId: chainId,
+                // this is our contract
+                verifyingContract: "0x7B6bEf228F123741446DcFEf030a2E4cee519144"
+                },
+
+                types: {
+                DnsUpdateRequest: [
+                    { name: "updateType", type: "string" },
+                    { name: "record", type: "DnsRecord" }
+                ],
+                DnsRecord: [
+                    { name: "name", type: "string" },
+                    { name: "dnsType", type: "string" },
+                    { name: "value", type: "string" },
+                    { name: "ttl", type: "uint256" }
+                ]
+                },
+                message: {
+                updateType: "ADD",
+                record: {
+                    name: "dkdk.club",
+                    dnsType: "A",
+                    value: "1.2.3.4",
+                    ttl: 300
+                }
+                }
+            };
+            const digest  = ethers.utils._TypedDataEncoder.hash(
+                typedMessage.domain,
+                typedMessage.types,
+                typedMessage.message
+                );
+
+            const signature = await signer._signTypedData(
+                typedMessage.domain,
+                typedMessage.types,
+                typedMessage.message
+                );
+            
+            console.log(`Digest is ${digest}`);
+            console.log(`ChainId is ${chainId}`);
+            console.log(`Signer address is ${await signer.getAddress()}`);
+            console.log(`Signature is ${signature}`);
+            // add text to logpanel
+            document.getElementById("logpanel").innerHTML = `
+                name: ${typedMessage.message.record.name} <br/>
+                signer: ${await signer.getAddress()} <br/>
+                digest: ${digest} <br/>
+                signature: ${signature} <br/>
+                input: 0x
+                `;
+        
+
+        } catch (e) {
+            console.error(e.message);
+        }
+      };
+    </script>
+  </head>
+
+  <body>
+    <button onclick="start()">request sign</button>
+    <br/>
+    <span id="logpanel"> </span>
+    <br/> <a href="https://sepolia.etherscan.io/address/0x7b6bef228f123741446dcfef030a2e4cee519144#readProxyContract#F27">Call `isValidSignatureByName` at Etherscan</a>
+    <script src="src/index.js"></script>
+  </body>
+</html>
