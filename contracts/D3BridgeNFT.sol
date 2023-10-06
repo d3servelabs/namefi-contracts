@@ -185,7 +185,7 @@ contract D3BridgeNFT is
         override(ERC721Upgradeable, AccessControlUpgradeable)
         returns (bool)
     {
-        return super.supportsInterface(interfaceId);
+        return super.supportsInterface(interfaceId) || interfaceId == type(IERC5267Upgradeable).interfaceId;
     }
 
     function setServiceCreditContract(address addr) public onlyRole(DEFAULT_ADMIN_ROLE) {
