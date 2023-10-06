@@ -11,7 +11,7 @@ import "./LockableNFT.sol";
 import "./IChargeableERC20.sol";
 import "./D3BridgeStruct.sol";
 /** @custom:security-contact team@d3serve.xyz
- * @custom:version 1
+ * @custom:version V0.0.5
  * The ABI of this interface in javascript array such as
 ```
 [
@@ -50,7 +50,7 @@ contract D3BridgeNFT is
     uint256 public constant CHARGE_PER_YEAR = 20 * 10 ** 18; // 20 D3BSC // TODO: decide charge amount
     string public constant CONTRACT_NAME = "D3BridgeNFT";
     string public constant CONTRACT_SYMBOL = "D3B";
-    string public constant CURRENT_VERSION = "v0.0.4";
+    string public constant CURRENT_VERSION = "v0.0.5";
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
