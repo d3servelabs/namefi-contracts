@@ -170,34 +170,34 @@ describe("D3BridgeServiceCredit", function () {
         expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("80", 18));
   });
 
-  it("should be able to be purchased", async function () {
+  it("should be able to be buyable", async function () {
     const { nftInstance, scInstance, 
       scDefaultAdmin, scMinter, scPauser,
       nftDefaultAdmin, nftMinter, 
       alice, bob, charlie 
     } = await loadFixture(deployFixture);   
-    expect(scInstance.connect(alice).puchaseWithEthers({value: ethers.utils.parseUnits("1", 18)}))
+    expect(scInstance.connect(alice).buyWithEthers({value: ethers.utils.parseUnits("1", 18)}))
       .to.be.revertedWith("D3BridgeServiceCredit: insufficient purchasble supply"); 
-    expect(scInstance.connect(alice).puchaseWithEthers({value: ethers.utils.parseUnits("1", 18)}))
+    expect(scInstance.connect(alice).buyWithEthers({value: ethers.utils.parseUnits("1", 18)}))
       .to.be.revertedWith("D3BridgeServiceCredit: insufficient purchasble supply"); 
   
-    let tx = await scInstance.connect(scMinter).increasePurchasableSupply(ethers.utils.parseUnits("1000", 18));
+    let tx = await scInstance.connect(scMinter).increaseBuyableSupply(ethers.utils.parseUnits("1000", 18));
     let rc = await tx.wait();
-    let event = rc.events?.find((e: any) => e.event === "IncreasePurchasableSupply");
+    let event = rc.events?.find((e: any) => e.event === "IncreaseBuyableSupply");
     expect(event).to.not.be.undefined;
     expect(event?.args?.increaseBy).to.equal(ethers.utils.parseUnits("1000", 18));
-    expect(await scInstance.connect(scMinter).purchasableSupply()).to.equal(ethers.utils.parseUnits("1000", 18));
+    expect(await scInstance.connect(scMinter).buyableSupply()).to.equal(ethers.utils.parseUnits("1000", 18));
 
     expect(await scInstance.tokenFractionPerGWei()).to.equal(ethers.utils.parseUnits("500", 9));
-    let tx2 = await scInstance.connect(alice).puchaseWithEthers({value: ethers.utils.parseUnits("0.5", 18)});
-    // check that tx2 contains the event Purchase
+    let tx2 = await scInstance.connect(alice).buyWithEthers({value: ethers.utils.parseUnits("0.5", 18)});
+    // check that tx2 contains the event BuyToken
     rc = await tx2.wait();
-    event = rc.events?.find((e: any) => e.event === "Purchase");
+    event = rc.events?.find((e: any) => e.event === "BuyToken");
     expect(event).to.not.be.undefined;
-    expect(event?.args?.purchasedAmount).to.equal(ethers.utils.parseUnits("250", 18));
+    expect(event?.args?.buyAmount).to.equal(ethers.utils.parseUnits("250", 18));
     expect(event?.args?.buyer).to.equal(alice.address);
-    expect(event?.args?.paymentToken).to.equal(ethers.constants.AddressZero);
-    expect(event?.args?.paymentAmount).to.equal(ethers.utils.parseUnits("0.5", 18));
+    expect(event?.args?.payToken).to.equal(ethers.constants.AddressZero);
+    expect(event?.args?.payAmount).to.equal(ethers.utils.parseUnits("0.5", 18));
     expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("250", 18));
   });
 });
