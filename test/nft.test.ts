@@ -254,4 +254,39 @@ describe("D3BridgeNFT", function () {
     });
   });
 
+  it("should enforce normalization upon minting", async function () {
+    const { 
+      instance,
+      signers,
+      minter,
+      alice,
+      bob,
+      charlie
+    } = await loadFixture(deployFixture);
+    const notNormalizedDomainName = "Bob.Alice.eth";
+    const expirationTime = (await ethers.provider.getBlock("latest")).timestamp + 60 * 60 * 24 * 365 * 10; // 10 days
+    expect(await instance.isNormalizedName(notNormalizedDomainName)).to.be.false;
+    await expect( instance.connect(minter).safeMintByNameNoCharge(
+      alice.address,
+      notNormalizedDomainName,
+      expirationTime,
+    )).to.be.revertedWith("D3BridgeNFT: domain name is not normalized");
+
+    const normalizedDomainName = "bob.alice.eth"; 
+    expect(await instance.isNormalizedName(normalizedDomainName)).to.be.true;
+    let tx = await instance.connect(minter).safeMintByNameNoCharge(
+      alice.address,
+      normalizedDomainName,
+      expirationTime,
+    );
+    let rc = await tx.wait();
+    let event = rc.events?.find((e: any) => e.event === "Transfer");
+    expect(event).to.not.be.undefined;
+    expect(event?.args?.from).to.equal(ethers.constants.AddressZero);
+    expect(event?.args?.to).to.equal(alice.address);
+    expect(event?.args?.tokenId).to.equal(ethers.utils.id(normalizedDomainName));
+    expect(await instance.ownerOf(ethers.utils.id(normalizedDomainName))).to.equal(alice.address);
+
+  });
+
 });

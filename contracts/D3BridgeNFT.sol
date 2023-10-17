@@ -69,6 +69,44 @@ contract D3BridgeNFT is
         return _idToDomainNameMap[tokenId];
     }
 
+
+    // if domainName contains any letter other than lowercase letters, numbers and ".", it is not normalized
+    // in our normalized form it doens't end with "."
+    // The following can be summarized as regex of /^[a-z0-9][a-z0-9\-\.]{1,253}\.$/
+    // https://regex101.com/r/Sn1S3J/1
+    function isNormalizedName(string memory domainName) public pure returns (bool) {
+        if (bytes(domainName).length < 3 || bytes(domainName).length > 255) {
+            return false;
+        }
+    
+        // A normalized domain name must NOT end with "."
+        if (bytes(domainName)[bytes(domainName).length - 1] == ".") {
+            return true;
+        }
+
+        // A nomralized domain name must start with lower case letter or number
+        bytes1 firstChar = bytes(domainName)[0];
+        if (firstChar < 0x30 || (firstChar > 0x39 && firstChar < 0x61) || firstChar > 0x7a) {
+            return false;
+        }
+
+        // if domainName contains any letter other than lowercase letters, numbers, dash and ".", it is not normalized
+        for (uint i = 1; i < bytes(domainName).length - 2; i++) {
+            bytes1 char = bytes(domainName)[i];
+            if (
+                !(char >= 0x30 && char <= 0x39) // 0-9
+                && !(char >= 0x61 && char <= 0x7a)  // a-z
+                && char != 0x2e // "."
+                && char != 0x2d // "-"
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+    
+
     function normalizedDomainNameToId(string memory domainName) public pure returns (uint256) {
         return uint256(keccak256(abi.encodePacked(domainName)));
     }
@@ -78,6 +116,7 @@ contract D3BridgeNFT is
         string memory domainName,
         uint256 expirationTime // unix timestamp
     ) internal virtual onlyRole(MINTER_ROLE) {
+        require(isNormalizedName(domainName), "D3BridgeNFT: domain name is not normalized");
         uint256 tokenId = normalizedDomainNameToId(domainName);
         _idToDomainNameMap[tokenId] = domainName;
         require(expirationTime > block.timestamp, "D3BridgeNFT: expiration time too early");
