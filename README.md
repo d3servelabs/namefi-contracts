@@ -37,7 +37,7 @@
 | NFT Proxy           | [0x7B6bEf228F123741446DcFEf030a2E4cee519144](https://sepolia.etherscan.io/address/0x7B6bEf228F123741446DcFEf030a2E4cee519144#code) |
 | NFT Logic(v.0.0.7)  | [0xA714914a220d5599a7372EE850f8DAaCE1dEe39d.](https://sepolia.etherscan.io/address/0xA714914a220d5599a7372EE850f8DAaCE1dEe39d.#code) |
 | SC Proxy            | [0x7dce171E04AdB3a2769918380B7604c685242320](https://sepolia.etherscan.io/address/0x7dce171E04AdB3a2769918380B7604c685242320#code) |
-| SC Logic            | [0x7c09E3cdfA63fBfaBAfbaB342fdFE31845a20439](https://sepolia.etherscan.io/address/0x7c09E3cdfA63fBfaBAfbaB342fdFE31845a20439#code) |
+| SC Logic(v.0.1.0)   | [0x33a307Acf00534a5083976349A6faACb73a6494f](https://sepolia.etherscan.io/address/0x33a307Acf00534a5083976349A6faACb73a6494f#code) |
 | ProxyAdmin (both)   | [0xA016886d155D6c82e0Cc59103920802121929F8f](https://sepolia.etherscan.io/address/0xA016886d155D6c82e0Cc59103920802121929F8f#code) |
 
 

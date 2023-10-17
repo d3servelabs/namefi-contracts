@@ -12,7 +12,7 @@ import "./D3BridgeNFT.sol";
 import "./IChargeableERC20.sol";
 
 /** @custom:security-contact security@d3serve.xyz
- * @custom:version v1
+ * @custom:version v0.1
  * The ABI of this interface in javascript array such as
 ```
 [
