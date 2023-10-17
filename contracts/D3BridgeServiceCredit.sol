@@ -10,9 +10,10 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
 import "./D3BridgeNFT.sol";
 import "./IChargeableERC20.sol";
+import "hardhat/console.sol";
 
 /** @custom:security-contact security@d3serve.xyz
- * @custom:version v0
+ * @custom:version v1
  * The ABI of this interface in javascript array such as
 ```
 [
@@ -42,6 +43,13 @@ contract D3BridgeServiceCredit is
         PausableUpgradeable, 
         AccessControlUpgradeable,
         IChargeableERC20 {
+    event IncreasePurchasableSupply(uint256 increaseBy);
+    event Purchase(
+        address indexed buyer, 
+        uint256 purchasedAmount,
+        address indexed paymentToken,  // address(0) for ethers 
+        uint256 paymentAmount);
+    uint256 private _purchasableSupply;
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER");
     bytes32 public constant CHARGER_ROLE = keccak256("CHARGER");
@@ -114,5 +122,51 @@ contract D3BridgeServiceCredit is
         _transfer(chargee, charger, amount); // TODO(audit): check if this is safe against reentry attack
         emit Charge(charger, chargee, amount, reason, extra);
         return keccak256("SUCCESS");
+    }
+    
+    function tokenFractionPerGWei() public pure returns (uint256) {
+        return _tokenFractionPerGWei();
+    }
+
+    function _tokenFractionPerGWei() internal pure returns (uint256) {
+        // 1 (sepolia) ether = 500 D3BSC
+        // TODO we may use a price oracle in the future.
+        return 500e9;
+    }
+
+    function puchaseWithEthers() payable public {
+        // TODO do we need SafeMath?
+        uint256 amount = 
+            (msg.value / 1e9) // gwei amount
+            * _tokenFractionPerGWei(); // token wad   
+        console.log("XXX msg.value / ", msg.value);
+        console.log("XXX amount", amount);
+        console.log("XXX purchasableSupply", _purchasableSupply);
+
+        require(_purchasableSupply >= amount, 
+            "D3BridgeServiceCredit: insufficient purchasble supply");
+        _purchasableSupply -= amount;
+        _mint(_msgSender(), amount);
+        emit Purchase(_msgSender(), amount, address(0), msg.value);
+    }
+
+    function purchasableSupply() public view returns (uint256) {
+        return _purchasableSupply;
+    }
+
+    // receive and fallback all point to purchaseWithEthers
+    receive() external payable {
+        puchaseWithEthers();
+    }
+
+    fallback() external payable {
+        puchaseWithEthers();
+    }
+
+    function increasePurchasableSupply(uint256 increaseBy) public 
+        onlyRole(MINTER_ROLE)
+        whenNotPaused {
+        _purchasableSupply = _purchasableSupply + increaseBy; // TODO do we need SafeMath?
+        emit IncreasePurchasableSupply(increaseBy);
     }
 }
