@@ -2,13 +2,19 @@
 pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+// AccessControl
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract TestERC20 is ERC20 {
+contract TestERC20 is ERC20, AccessControl {
+
     constructor () ERC20(
         "TestERC20",
         "TEST"
-    ) {}
-    function mint(address account, uint256 amount) public {
+    ) {
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    }
+
+    function mint(address account, uint256 amount) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _mint(account, amount);
     }
 

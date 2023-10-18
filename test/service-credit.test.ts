@@ -228,6 +228,7 @@ describe("D3BridgeServiceCredit", function () {
     const TestERC20 = await ethers.getContractFactory("TestERC20");
     const terc20 = await TestERC20.deploy();
     await terc20.deployed();
+    await terc20.grantRole(DEFAULT_ADMIN_ROLE, scMinter.address);
     await expect(scInstance.price(terc20.address))
       .to.be.revertedWith("D3BridgeServiceCredit: unsupported payToken");
     let tx0 = await scInstance.connect(scMinter).setPrice(
@@ -250,7 +251,8 @@ describe("D3BridgeServiceCredit", function () {
       terc20.address, 
       ethers.utils.parseUnits("500", 18)))
         .to.be.revertedWith("ERC20: transfer amount exceeds allowance");
-    await terc20.connect(scMinter).mint(alice.address, ethers.utils.parseUnits("1000", 18));
+    await terc20.connect(scMinter)
+      .mint(alice.address, ethers.utils.parseUnits("1000", 18));
     await expect(scInstance.connect(alice).buy(
       ethers.utils.parseUnits("250", 18),
       terc20.address, 
