@@ -170,12 +170,29 @@ describe("D3BridgeServiceCredit", function () {
         expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("80", 18));
   });
 
-  it("should be able to be buyable", async function () {
+  it("should be able to be buyable with ethers", async function () {
     const { nftInstance, scInstance, 
       scDefaultAdmin, scMinter, scPauser,
       nftDefaultAdmin, nftMinter, 
       alice, bob, charlie 
     } = await loadFixture(deployFixture);   
+    await expect(scInstance.price(ethers.constants.AddressZero))
+      .to.be.revertedWith("D3BridgeServiceCredit: unsupported payToken");
+    await expect(scInstance.connect(alice).setPrice(
+      ethers.constants.AddressZero,
+      ethers.utils.parseUnits("2", 6)))
+      .to.be.revertedWith(/^D3BridgeServiceCredit: missing role/);
+    let tx0 = await scInstance.connect(scMinter).setPrice(
+      ethers.constants.AddressZero,
+      ethers.utils.parseUnits("2", 6));
+    let rc0 = await tx0.wait();
+    let event0 = rc0.events?.find((e: any) => e.event === "SetPrice");
+    expect(event0).to.not.be.undefined;
+    expect(event0?.args?.payToken).to.equal(ethers.constants.AddressZero);
+    expect(event0?.args?.price).to.equal(ethers.utils.parseUnits("2", 6));
+    expect(await scInstance.price(ethers.constants.AddressZero))
+      .to.equal(ethers.utils.parseUnits("2", 6));
+
     expect(scInstance.connect(alice).buyWithEthers({value: ethers.utils.parseUnits("1", 18)}))
       .to.be.revertedWith("D3BridgeServiceCredit: insufficient purchasble supply"); 
     expect(scInstance.connect(alice).buyWithEthers({value: ethers.utils.parseUnits("1", 18)}))
@@ -188,7 +205,6 @@ describe("D3BridgeServiceCredit", function () {
     expect(event?.args?.increaseBy).to.equal(ethers.utils.parseUnits("1000", 18));
     expect(await scInstance.connect(scMinter).buyableSupply()).to.equal(ethers.utils.parseUnits("1000", 18));
 
-    expect(await scInstance.tokenFractionPerGWei()).to.equal(ethers.utils.parseUnits("500", 9));
     let tx2 = await scInstance.connect(alice).buyWithEthers({value: ethers.utils.parseUnits("0.5", 18)});
     // check that tx2 contains the event BuyToken
     rc = await tx2.wait();
@@ -198,6 +214,66 @@ describe("D3BridgeServiceCredit", function () {
     expect(event?.args?.buyer).to.equal(alice.address);
     expect(event?.args?.payToken).to.equal(ethers.constants.AddressZero);
     expect(event?.args?.payAmount).to.equal(ethers.utils.parseUnits("0.5", 18));
+    expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("250", 18));
+  });
+
+
+  it("should be able to be buyable with a TestERC20", async function () {
+    const { nftInstance, scInstance, 
+      scDefaultAdmin, scMinter, scPauser,
+      nftDefaultAdmin, nftMinter, 
+      alice, bob, charlie 
+    } = await loadFixture(deployFixture);
+    // deploy TestERC20
+    const TestERC20 = await ethers.getContractFactory("TestERC20");
+    const terc20 = await TestERC20.deploy();
+    await terc20.deployed();
+    await expect(scInstance.price(terc20.address))
+      .to.be.revertedWith("D3BridgeServiceCredit: unsupported payToken");
+    let tx0 = await scInstance.connect(scMinter).setPrice(
+      terc20.address,
+      ethers.utils.parseUnits("2", 9));
+    let rc0 = await tx0.wait();
+    let event0 = rc0.events?.find((e: any) => e.event === "SetPrice");
+    expect(event0).to.not.be.undefined;
+    expect(event0?.args?.payToken).to.equal(terc20.address);
+    expect(event0?.args?.price).to.equal(ethers.utils.parseUnits("2", 9));
+    expect(await scInstance.price(terc20.address))
+      .to.equal(ethers.utils.parseUnits("2", 9));
+  
+    await scInstance.connect(scMinter)
+      .increaseBuyableSupply(ethers.utils.parseUnits("1000", 18));
+    expect(await scInstance.connect(scMinter).buyableSupply()).to.equal(ethers.utils.parseUnits("1000", 18));
+
+    await expect(scInstance.connect(alice).buy(
+      ethers.utils.parseUnits("250", 18),
+      terc20.address, 
+      ethers.utils.parseUnits("500", 18)))
+        .to.be.revertedWith("ERC20: transfer amount exceeds allowance");
+    await terc20.connect(scMinter).mint(alice.address, ethers.utils.parseUnits("1000", 18));
+    await expect(scInstance.connect(alice).buy(
+      ethers.utils.parseUnits("250", 18),
+      terc20.address, 
+      ethers.utils.parseUnits("500", 18)))
+        .to.be.revertedWith("ERC20: transfer amount exceeds allowance");
+    await terc20.connect(alice).approve(scInstance.address, ethers.utils.parseUnits("500", 18));
+    await expect(scInstance.connect(alice).buy(
+      ethers.utils.parseUnits("250", 18),
+      terc20.address, 
+      ethers.utils.parseUnits("400", 18)))
+        .to.be.revertedWith("D3BridgeServiceCredit: payAmount insufficient.");
+    let tx2 = await scInstance.connect(alice).buy(
+      ethers.utils.parseUnits("250", 18),
+      terc20.address, 
+      ethers.utils.parseUnits("500", 18));
+      // check that tx2 contains the event BuyToken
+    const rc2 = await tx2.wait();
+    const ev2 = rc2.events?.find((e: any) => e.event === "BuyToken");
+    expect(ev2).to.not.be.undefined;
+    expect(ev2?.args?.buyAmount).to.equal(ethers.utils.parseUnits("250", 18));
+    expect(ev2?.args?.buyer).to.equal(alice.address);
+    expect(ev2?.args?.payToken).to.equal(terc20.address);
+    expect(ev2?.args?.payAmount).to.equal(ethers.utils.parseUnits("500", 18));
     expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("250", 18));
   });
 });
