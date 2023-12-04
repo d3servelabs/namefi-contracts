@@ -184,7 +184,7 @@ describe("D3BridgeServiceCredit", function () {
 
         const expirationTime =
           (await ethers.provider.getBlock("latest")).timestamp +
-          60 * 60 * 24 * 365 * 10; // 10 days
+          60 * 60 * 24 * 365 * 10; // 10 years
     
         expect(await scInstance.connect(scMinter).balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("100", 18));
         await scInstance.connect(scDefaultAdmin).grantRole(CHARGER_ROLE, nftInstance.address);
@@ -210,6 +210,7 @@ describe("D3BridgeServiceCredit", function () {
             [] // extra data
             );          
         expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("40", 18));  
+        expect(await nftInstance.getExpiration(ethers.utils.id(normalizedDomainName))).to.equal(expirationTime + 60 * 60 * 24 * 365 * 2);
 
   });
 
