@@ -3,9 +3,13 @@ pragma solidity 0.8.19;
 
 abstract contract ExpirableNFT {
     mapping(uint256 id => uint256) private _expirations;
-
-    function getExpiration(uint256 tokenId) public view returns (uint256) {
+    
+    function _getExpiration(uint256 tokenId) internal view returns (uint256) {
         return _expirations[tokenId];
+    }
+    
+    function getExpiration(uint256 tokenId) public view returns (uint256) {
+        return _getExpiration(tokenId);
     }
     
     function isExpired(uint256 tokenId) public view returns (bool) {

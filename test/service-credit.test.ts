@@ -135,8 +135,7 @@ describe("D3BridgeServiceCredit", function () {
         expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("80", 18));
   });
 
-
-  it("should be able to be charged", async function () {
+  it("should be able to be charged to mint a new name", async function () {
     const { nftInstance, scInstance, 
       scDefaultAdmin, scMinter, scPauser,
       nftDefaultAdmin, nftMinter, 
@@ -170,6 +169,50 @@ describe("D3BridgeServiceCredit", function () {
         expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("80", 18));
   });
 
+  it("should be able to be charged to mint extend a domain with a multiple of year", async function () {
+    const { nftInstance, scInstance, 
+      scDefaultAdmin, scMinter, scPauser,
+      nftDefaultAdmin, nftMinter, 
+      alice, bob, charlie 
+    } = await loadFixture(deployFixture);   
+        
+        await scInstance.connect(scDefaultAdmin).grantRole(MINTER_ROLE, scMinter.address);
+        await scInstance.connect(scMinter).mint(alice.address, ethers.utils.parseUnits("100", 18));
+        await scInstance.connect(scDefaultAdmin).revokeRole(MINTER_ROLE, scMinter.address);
+
+        const normalizedDomainName = "bob.alice.eth";
+
+        const expirationTime =
+          (await ethers.provider.getBlock("latest")).timestamp +
+          60 * 60 * 24 * 365 * 10; // 10 days
+    
+        expect(await scInstance.connect(scMinter).balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("100", 18));
+        await scInstance.connect(scDefaultAdmin).grantRole(CHARGER_ROLE, nftInstance.address);
+        await nftInstance.connect(nftDefaultAdmin).grantRole(MINTER_ROLE, nftMinter.address);
+        await nftInstance.connect(nftDefaultAdmin).setServiceCreditContract(scInstance.address);
+        const tx = await nftInstance.connect(nftMinter)
+          .safeMintByNameWithCharge(
+            bob.address,
+            normalizedDomainName,
+            expirationTime,
+            alice.address, // chargee
+            []
+          );
+        expect(await nftInstance.ownerOf(ethers.utils.id(normalizedDomainName))).to.equal(bob.address);
+        expect(await nftInstance.ownerOf(ethers.utils.id("bob.alice.eth"))).to.equal(bob.address);
+        expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("80", 18));
+
+        const tx2 = await nftInstance.connect(nftMinter)
+            .extendByNameWithCharge(
+            normalizedDomainName,
+            60 * 60 * 24 * 365 * 2, // 2 years
+            alice.address, // chargee
+            [] // extra data
+            );          
+        expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("40", 18));  
+
+  });
+
   it("should be able to be buyable with ethers", async function () {
     const { nftInstance, scInstance, 
       scDefaultAdmin, scMinter, scPauser,
@@ -181,7 +224,7 @@ describe("D3BridgeServiceCredit", function () {
     await expect(scInstance.connect(alice).setPrice(
       ethers.constants.AddressZero,
       ethers.utils.parseUnits("2", 6)))
-      .to.be.revertedWith(/^D3BridgeServiceCredit: missing role/);
+      .to.be.revertedWith(/^AccessControl.*is missing role/);
     let tx0 = await scInstance.connect(scMinter).setPrice(
       ethers.constants.AddressZero,
       ethers.utils.parseUnits("2", 6));

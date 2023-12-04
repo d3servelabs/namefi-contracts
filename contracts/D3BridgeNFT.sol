@@ -12,7 +12,7 @@ import "./LockableNFT.sol";
 import "./IChargeableERC20.sol";
 import "./D3BridgeStruct.sol";
 /** @custom:security-contact team@d3serve.xyz
- * @custom:version V0.0.7
+ * @custom:version V0.0.8
  * The ABI of this interface in javascript array such as
 ```
 [
@@ -114,7 +114,7 @@ contract D3BridgeNFT is
     function _safeMintByName(
         address to, 
         string memory domainName,
-        uint256 expirationTime // unix timestamp
+        uint256 expirationTime // same unit of block.timestamp
     ) internal virtual onlyRole(MINTER_ROLE) {
         require(isNormalizedName(domainName), "D3BridgeNFT: domain name is not normalized");
         uint256 tokenId = normalizedDomainNameToId(domainName);
@@ -140,25 +140,36 @@ contract D3BridgeNFT is
         return _currentChargePerYear(domainName);
     }
 
-    function safeMintByNameWithCharge(
-        address to,
-        string memory domainName,
-        uint256 expirationTime, // unix timestamp
-        address chargee,
-        bytes memory /*extraData*/
-    ) external virtual onlyRole(MINTER_ROLE) {
+    function _ensureChargeServiceCredit(
+            address chargee, 
+            uint256 chageAmount, 
+            string memory reason, 
+            bytes memory /* extraData */) internal {
         require(_d3BridgeServiceCreditContract != IChargeableERC20(address(0)), "D3BridgeNFT: service credit contract not set");
         // TODO: audit to protect from reentry attack
         bytes32 result = _d3BridgeServiceCreditContract.charge(
             address(this), 
             chargee, 
-            _currentChargePerYear(domainName), 
+            chageAmount, 
             // add string reason "D3BridgeNFT: mint" + domainName in one string
-            string(abi.encodePacked("D3BridgeNFT: mint ", domainName)),
+            reason,
             bytes("")
         );
-
         require(result == keccak256("SUCCESS"), "D3BridgeNFT: charge failed");
+    }
+
+    function safeMintByNameWithCharge(
+        address to,
+        string memory domainName,
+        uint256 expirationTime, // same unit of block.timestamp
+        address chargee,
+        bytes memory /*extraData*/
+    ) external virtual onlyRole(MINTER_ROLE) {
+        _ensureChargeServiceCredit(
+            chargee, 
+            _currentChargePerYear(domainName), 
+            string(abi.encodePacked("D3BridgeNFT: mint ", domainName)),
+            bytes(""));
         _safeMintByName(to, domainName, expirationTime);
     }
 
@@ -200,6 +211,23 @@ contract D3BridgeNFT is
 
     function setExpiration(uint256 tokenId, uint256 expirationTime) public override onlyRole(MINTER_ROLE) {
         _setExpiration(tokenId, expirationTime);
+    }
+
+    function extendByNameWithCharge(
+            string memory domainName, 
+            uint256 timeToExtend, // Same unit with expirationTime new expiration time shall be expirationTime + timeToExtend
+            address chargee,
+            bytes memory /* extraEata */) external virtual onlyRole(MINTER_ROLE) {
+        require(timeToExtend % 365 days == 0, "D3BridgeNFT: timeToExtend must be multiple of 365 days");
+        uint256 yearToExtend = timeToExtend / 365 days;
+        uint256 tokenId = normalizedDomainNameToId(domainName);        
+        _ensureChargeServiceCredit(
+            chargee, 
+            // For simplecity we are using a per-year model.
+            _currentChargePerYear(domainName) * (yearToExtend),
+            string(abi.encodePacked("D3BridgeNFT: mint ", domainName)),
+            bytes(""));
+         _setExpiration(tokenId, _getExpiration(tokenId) + timeToExtend);
     }
 
     function lock(uint256 tokenId, bytes calldata extra) external payable override onlyRole(MINTER_ROLE) {
