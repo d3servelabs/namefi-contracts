@@ -16,7 +16,7 @@ task("print-signers", "Printer signers")
         }
     });
 
-task("d3bridge-logic-deploy", "Deploy the logic contract")
+task("namefi-logic-deploy", "Deploy the logic contract")
     .addParam("logicContractName")
     .setAction(async function (taskArguments: TaskArguments, { ethers, run }) {
         const signers = await ethers.getSigners();
@@ -42,7 +42,7 @@ task("d3bridge-logic-deploy", "Deploy the logic contract")
         console.log(`Contract ${taskArguments.logicContractName} verified at ${contract.address}.`);
     });
 
-task("d3bridge-proxy-deploy", "Deploy Transparent Upgradeable Proxy")
+task("namefi-proxy-deploy", "Deploy Transparent Upgradeable Proxy")
     .addParam("logicContractName")
     .addParam("logicAddress")
     .addParam("adminAddress")
@@ -88,7 +88,7 @@ task("d3bridge-proxy-deploy", "Deploy Transparent Upgradeable Proxy")
 
     });
 
-task("d3bridge-admin-deploy", "Deploy the ProxyAdmin contract")
+task("namefi-admin-deploy", "Deploy the ProxyAdmin contract")
     .setAction(async function (taskArguments: TaskArguments, { ethers, run }) {
         const signers = await ethers.getSigners();
         const signer = signers[0];
@@ -114,7 +114,7 @@ task("d3bridge-admin-deploy", "Deploy the ProxyAdmin contract")
         console.log(`Done verifying proxyAdmin at ${proxyAdmin.address}`);
     });
 
-task("d3bridge-upgrade", "Deploy the ProxyAdmin contract")
+task("namefi-upgrade", "Deploy the ProxyAdmin contract")
     .addParam("proxyAddress")
     .addParam("logicAddress")
     .setAction(async function (taskArguments: TaskArguments, { ethers, run }) {

@@ -45,7 +45,7 @@ describe("EIP712", function () {
       return { instance, proxy, logic };
     };
     const { instance, logic, proxy } = await creatUpgradableContract(
-      "D3BridgeNFT",
+      "NamefiNFT",
       defaultAdmin
     );
     return {
@@ -225,7 +225,7 @@ describe("EIP712", function () {
   
 });
 
-describe("D3Bridge with SigChecker", function () {
+describe("Namefi with SigChecker", function () {
   const DEFAULT_ADMIN_ROLE = ethers.utils.hexZeroPad("0x00", 32);
   const MINTER_ROLE = ethers.utils.keccak256(
     ethers.utils.toUtf8Bytes("MINTER")
@@ -278,7 +278,7 @@ describe("D3Bridge with SigChecker", function () {
       contractDeploySigner
     );
     const { instance, logic, proxy } = await creatUpgradableContract(
-      "D3BridgeNFT",
+      "NamefiNFT",
       proxyAdmin
     );
     await instance.connect(defaultAdmin).grantRole(MINTER_ROLE, minter.address);

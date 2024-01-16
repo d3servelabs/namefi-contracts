@@ -1,7 +1,7 @@
 const typedMessage = {
   primaryType: 'DnsUpdateRequest',
   domain: {
-    name: 'D3Bridge',
+    name: 'Namefi',
     version: '1',
   },
 

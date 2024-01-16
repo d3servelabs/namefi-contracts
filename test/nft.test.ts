@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { deployByName } from "../utils/deployUtil";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 
-describe("D3BridgeNFT", function () {
+describe("NamefiNFT", function () {
   const DEFAULT_ADMIN_ROLE = ethers.utils.hexZeroPad("0x00", 32);
   const MINTER_ROLE = ethers.utils.keccak256(
     ethers.utils.toUtf8Bytes("MINTER")
@@ -22,7 +22,7 @@ describe("D3BridgeNFT", function () {
 
     const { contract: logic } = await deployByName(
       ethers, 
-      "D3BridgeNFT", 
+      "NamefiNFT", 
       [], 
       contractDeploySigner
     );
@@ -45,7 +45,7 @@ describe("D3BridgeNFT", function () {
       contractDeploySigner
     );
     const instance = await ethers.getContractAt(
-      "D3BridgeNFT",
+      "NamefiNFT",
       proxy.address);
 
     await instance.connect(contractDeploySigner).initialize();
@@ -155,7 +155,7 @@ describe("D3BridgeNFT", function () {
         bob.address,
         normalizedDomainName,
         expirationTime))
-        .to.be.revertedWith("D3BridgeNFT: expiration time too early");
+        .to.be.revertedWith("NamefiNFT: expiration time too early");
     });
 
     it("Should be respected at transfering", async function () {
@@ -270,7 +270,7 @@ describe("D3BridgeNFT", function () {
       alice.address,
       notNormalizedDomainName,
       expirationTime,
-    )).to.be.revertedWith("D3BridgeNFT: domain name is not normalized");
+    )).to.be.revertedWith("NamefiNFT: domain name is not normalized");
 
     const normalizedDomainName = "bob.alice.eth"; 
     expect(await instance.isNormalizedName(normalizedDomainName)).to.be.true;

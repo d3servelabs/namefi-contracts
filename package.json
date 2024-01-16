@@ -1,5 +1,5 @@
 {
-  "name": "d3bridge-nft",
+  "name": "namefi-nft",
   "version": "0.0.8",
   "description": "",
   "main": "index.js",
@@ -8,7 +8,7 @@
     "compile": "hardhat compile",
     "coverage": "hardhat coverage",
     "clean": "hardhat clean",
-    "gen712": "eip712-codegen --input d3bridge-struct.js --entryPoints DnsUpdateRequest > contracts/gen/D3BridgeStruct.sol"
+    "gen712": "eip712-codegen --input namefi-struct.js --entryPoints DnsUpdateRequest > contracts/gen/NamefiStruct.sol"
   },
   "author": "dev-team@d3serve.xyz",
   "devDependencies": {

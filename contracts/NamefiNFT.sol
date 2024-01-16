@@ -10,7 +10,7 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/SignatureCheckerU
 import "./ExpirableNFT.sol";
 import "./LockableNFT.sol";
 import "./IChargeableERC20.sol";
-import "./D3BridgeStruct.sol";
+import "./NamefiStruct.sol";
 /** @custom:security-contact team@d3serve.xyz
  * @custom:version V0.0.8
  * The ABI of this interface in javascript array such as
@@ -33,7 +33,7 @@ import "./D3BridgeStruct.sol";
 ]
 ```
 */
-contract D3BridgeNFT is 
+contract NamefiNFT is 
         Initializable, 
         ERC721Upgradeable, 
         AccessControlUpgradeable, 
@@ -43,13 +43,13 @@ contract D3BridgeNFT is
         IERC5267Upgradeable {
     string private _baseUriStr;  // Storage Slot
     mapping(uint256 id => string) private _idToDomainNameMap; //  Storage Slot
-    IChargeableERC20 public _d3BridgeServiceCreditContract;  // Storage Slot
+    IChargeableERC20 public _NamefiServiceCreditContract;  // Storage Slot
 
     // Currently MINTER_ROLE is used for minting, burning and updating expiration time
     // until we have need more fine-grain control.
     bytes32 public constant MINTER_ROLE = keccak256("MINTER");
     uint256 public constant CHARGE_PER_YEAR = 20 * 10 ** 18; // 20 D3BSC // TODO: decide charge amount
-    string public constant CONTRACT_NAME = "D3BridgeNFT";
+    string public constant CONTRACT_NAME = "NamefiNFT";
     string public constant CONTRACT_SYMBOL = "D3B";
     string public constant CURRENT_VERSION = "v0.0.6";
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -116,10 +116,10 @@ contract D3BridgeNFT is
         string memory domainName,
         uint256 expirationTime // same unit of block.timestamp
     ) internal virtual onlyRole(MINTER_ROLE) {
-        require(isNormalizedName(domainName), "D3BridgeNFT: domain name is not normalized");
+        require(isNormalizedName(domainName), "NamefiNFT: domain name is not normalized");
         uint256 tokenId = normalizedDomainNameToId(domainName);
         _idToDomainNameMap[tokenId] = domainName;
-        require(expirationTime > block.timestamp, "D3BridgeNFT: expiration time too early");
+        require(expirationTime > block.timestamp, "NamefiNFT: expiration time too early");
         _setExpiration(tokenId, expirationTime);
         _safeMint(to, tokenId);
     }
@@ -145,17 +145,17 @@ contract D3BridgeNFT is
             uint256 chageAmount, 
             string memory reason, 
             bytes memory /* extraData */) internal {
-        require(_d3BridgeServiceCreditContract != IChargeableERC20(address(0)), "D3BridgeNFT: service credit contract not set");
+        require(_NamefiServiceCreditContract != IChargeableERC20(address(0)), "NamefiNFT: service credit contract not set");
         // TODO: audit to protect from reentry attack
-        bytes32 result = _d3BridgeServiceCreditContract.charge(
+        bytes32 result = _NamefiServiceCreditContract.charge(
             address(this), 
             chargee, 
             chageAmount, 
-            // add string reason "D3BridgeNFT: mint" + domainName in one string
+            // add string reason "NamefiNFT: mint" + domainName in one string
             reason,
             bytes("")
         );
-        require(result == keccak256("SUCCESS"), "D3BridgeNFT: charge failed");
+        require(result == keccak256("SUCCESS"), "NamefiNFT: charge failed");
     }
 
     function safeMintByNameWithCharge(
@@ -168,7 +168,7 @@ contract D3BridgeNFT is
         _ensureChargeServiceCredit(
             chargee, 
             _currentChargePerYear(domainName), 
-            string(abi.encodePacked("D3BridgeNFT: mint ", domainName)),
+            string(abi.encodePacked("NamefiNFT: mint ", domainName)),
             bytes(""));
         _safeMintByName(to, domainName, expirationTime);
     }
@@ -205,7 +205,7 @@ contract D3BridgeNFT is
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(_exists(tokenId), "D3BridgeNFT: URI query for nonexistent token");
+        require(_exists(tokenId), "NamefiNFT: URI query for nonexistent token");
         return string(abi.encodePacked(_baseURI(), _idToDomainNameMap[tokenId]));
     }
 
@@ -218,14 +218,14 @@ contract D3BridgeNFT is
             uint256 timeToExtend, // Same unit with expirationTime new expiration time shall be expirationTime + timeToExtend
             address chargee,
             bytes memory /* extraEata */) external virtual onlyRole(MINTER_ROLE) {
-        require(timeToExtend % 365 days == 0, "D3BridgeNFT: timeToExtend must be multiple of 365 days");
+        require(timeToExtend % 365 days == 0, "NamefiNFT: timeToExtend must be multiple of 365 days");
         uint256 yearToExtend = timeToExtend / 365 days;
         uint256 tokenId = normalizedDomainNameToId(domainName);        
         _ensureChargeServiceCredit(
             chargee, 
             // For simplecity we are using a per-year model.
             _currentChargePerYear(domainName) * (yearToExtend),
-            string(abi.encodePacked("D3BridgeNFT: mint ", domainName)),
+            string(abi.encodePacked("NamefiNFT: mint ", domainName)),
             bytes(""));
          _setExpiration(tokenId, _getExpiration(tokenId) + timeToExtend);
     }
@@ -258,7 +258,7 @@ contract D3BridgeNFT is
     }
 
     function setServiceCreditContract(address addr) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        _d3BridgeServiceCreditContract = IChargeableERC20(addr);
+        _NamefiServiceCreditContract = IChargeableERC20(addr);
     }
 
     function getDomainHash() public view override virtual returns (bytes32) {
@@ -302,8 +302,8 @@ contract D3BridgeNFT is
         bytes memory siganture,
         bytes memory /*extraData*/
     ) internal view returns (bytes32 magicValue) {
-        require(_exists(tokenId), "D3BridgeNFT: URI query for nonexistent token");
-        require(_isApprovedOrOwner(signer, tokenId), "D3BridgeNFT: transfer caller is not owner nor approved");
+        require(_exists(tokenId), "NamefiNFT: URI query for nonexistent token");
+        require(_isApprovedOrOwner(signer, tokenId), "NamefiNFT: transfer caller is not owner nor approved");
         if (SignatureCheckerUpgradeable.isValidSignatureNow(signer, digest, siganture)) {
             return VALID_SIG_BY_ID_MAGIC_VALUE;
         } else {

@@ -10,7 +10,7 @@ import "@openzeppelin/contracts-upgradeable/interfaces/IERC20Upgradeable.sol";
 
 
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
-import "./D3BridgeNFT.sol";
+import "./NamefiNFT.sol";
 import "./IChargeableERC20.sol";
 import "./IBuyableERC20.sol";
 
@@ -38,7 +38,7 @@ import "./IBuyableERC20.sol";
 ]
 ```
 */
-contract D3BridgeServiceCredit is 
+contract NamefiServiceCredit is 
         Initializable, 
         ERC20Upgradeable, 
         ERC20BurnableUpgradeable, 
@@ -58,7 +58,7 @@ contract D3BridgeServiceCredit is
     }
 
     function initialize() initializer public {
-        __ERC20_init("D3Bridge Service Credit", "D3BSC");
+        __ERC20_init("Namefi Service Credit", "D3BSC");
         __ERC20Burnable_init();
         __Pausable_init();
         __AccessControl_init();
@@ -90,15 +90,15 @@ contract D3BridgeServiceCredit is
 
     // TODO: update to more general approach of ERC-1363
     function payAndSafeMintByName(
-        D3BridgeNFT d3BridgeNftAddress,
+        NamefiNFT NamefiNFTAddress,
         address mintTo, 
         string memory domainName,
         uint256 expirationTime // unix timestamp
     ) public {
         uint256 CHARGE = 20 * 10 ** 18; // 20 D3BSC // TODO: decide charge amount
-        require(balanceOf(_msgSender()) >= CHARGE, "D3BridgeServiceCredit: insufficient balance");
+        require(balanceOf(_msgSender()) >= CHARGE, "NamefiServiceCredit: insufficient balance");
         _burn(_msgSender(), CHARGE); // TODO(audit): check if this is safe
-        d3BridgeNftAddress.safeMintByNameNoCharge(mintTo, domainName, expirationTime);
+        NamefiNFTAddress.safeMintByNameNoCharge(mintTo, domainName, expirationTime);
     }
 
     function charge(
@@ -109,12 +109,12 @@ contract D3BridgeServiceCredit is
             bytes memory extra) external
         returns (bytes32) {
         // We might upgrade this logic to enable endorsable charges, so charger doesn't have to be the msg.sender
-        require(charger == _msgSender(), "D3BridgeServiceCredit: must be called by a charger");
+        require(charger == _msgSender(), "NamefiServiceCredit: must be called by a charger");
 
-        require(hasRole(CHARGER_ROLE, charger), "D3BridgeServiceCredit: must have charger role");
+        require(hasRole(CHARGER_ROLE, charger), "NamefiServiceCredit: must have charger role");
 
         // chargee has more balance than the charge amount
-        require(balanceOf(chargee) >= amount, "D3BridgeServiceCredit: insufficient balance");
+        require(balanceOf(chargee) >= amount, "NamefiServiceCredit: insufficient balance");
 
         // require the caller to have the CHARGER_ROLE
         _transfer(chargee, charger, amount); // TODO(audit): check if this is safe against reentry attack
@@ -129,7 +129,7 @@ contract D3BridgeServiceCredit is
             / _price(address(0)); // token wad
 
         require(_buyableSupply >= buyAmount, 
-            "D3BridgeServiceCredit: insufficient buyable supply");
+            "NamefiServiceCredit: insufficient buyable supply");
         _buyableSupply -= buyAmount;
         _mint(_msgSender(), buyAmount);
         emit BuyToken(_msgSender(), buyAmount, address(0), msg.value);
@@ -161,7 +161,7 @@ contract D3BridgeServiceCredit is
         if (payPrice > 0) {
             return payPrice;
         }
-        revert("D3BridgeServiceCredit: unsupported payToken");
+        revert("NamefiServiceCredit: unsupported payToken");
     }
     
     function setPrice(address payToken, uint256 newPrice) external override onlyRole(MINTER_ROLE) {
@@ -179,13 +179,13 @@ contract D3BridgeServiceCredit is
 
     function _buy(uint256 buyAmount, address payToken, uint256 payAmount) 
         internal virtual whenNotPaused {
-        require(_buyableSupply >= buyAmount, "D3BridgeServiceCredit: insufficient buyable supply");
+        require(_buyableSupply >= buyAmount, "NamefiServiceCredit: insufficient buyable supply");
         
         uint256 totalPrice = _price(payToken) * (buyAmount / 1e9);
-        require(payAmount >= totalPrice, "D3BridgeServiceCredit: payAmount insufficient.");
+        require(payAmount >= totalPrice, "NamefiServiceCredit: payAmount insufficient.");
         
         if (payToken == address(0)) {
-            require(msg.value >= totalPrice, "D3BridgeServiceCredit: insufficient ethers");
+            require(msg.value >= totalPrice, "NamefiServiceCredit: insufficient ethers");
             // the ethers is received by the contract in the amount of msg.value
         } else {
             // According to ERC20 It is not reliable to rely on the return value of
@@ -201,7 +201,7 @@ contract D3BridgeServiceCredit is
             // and it will need to be handled by a new standard or at least a new interface.
             IERC20Upgradeable(payToken).transferFrom(_msgSender(), address(this), totalPrice);
             uint256 afterBalance = IERC20Upgradeable(payToken).balanceOf(address(this));
-            require(afterBalance - beforeBalance >= totalPrice, "D3BridgeServiceCredit: incorrect payAmount");
+            require(afterBalance - beforeBalance >= totalPrice, "NamefiServiceCredit: incorrect payAmount");
         }
         _mint(_msgSender(), buyAmount);
         if (payToken == address(0)) {

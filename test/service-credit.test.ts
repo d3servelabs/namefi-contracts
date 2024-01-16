@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 import { deployByName } from "../utils/deployUtil";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 
-describe("D3BridgeServiceCredit", function () {
+describe("NamefiServiceCredit", function () {
   const DEFAULT_ADMIN_ROLE = ethers.utils.hexZeroPad("0x00", 32);
   const MINTER_ROLE = ethers.utils.keccak256(
     ethers.utils.toUtf8Bytes("MINTER")
@@ -66,13 +66,13 @@ describe("D3BridgeServiceCredit", function () {
         [], 
         contractDeploySigner
       );
-    const { instance: nftInstance, logic: nftLogic } = await creatUpgradableContract("D3BridgeNFT", proxyAdmin);
+    const { instance: nftInstance, logic: nftLogic } = await creatUpgradableContract("NamefiNFT", proxyAdmin);
     await nftInstance.connect(contractDeploySigner).grantRole(DEFAULT_ADMIN_ROLE, nftDefaultAdmin.address);
     await nftInstance.connect(contractDeploySigner).renounceRole(DEFAULT_ADMIN_ROLE, contractDeploySigner.address);
     await nftInstance.connect(contractDeploySigner).renounceRole(MINTER_ROLE, contractDeploySigner.address);
     await nftInstance.connect(contractDeploySigner).renounceRole(PAUSER_ROLE, contractDeploySigner.address);
   
-    const { instance: scInstance } = await creatUpgradableContract("D3BridgeServiceCredit", proxyAdmin);
+    const { instance: scInstance } = await creatUpgradableContract("NamefiServiceCredit", proxyAdmin);
     await scInstance.connect(contractDeploySigner).grantRole(MINTER_ROLE, scMinter.address);
     await scInstance.connect(contractDeploySigner).grantRole(DEFAULT_ADMIN_ROLE, scDefaultAdmin.address);
     expect(await scInstance.hasRole(DEFAULT_ADMIN_ROLE, scDefaultAdmin.address)).to.be.true;
@@ -221,7 +221,7 @@ describe("D3BridgeServiceCredit", function () {
       alice, bob, charlie 
     } = await loadFixture(deployFixture);   
     await expect(scInstance.price(ethers.constants.AddressZero))
-      .to.be.revertedWith("D3BridgeServiceCredit: unsupported payToken");
+      .to.be.revertedWith("NamefiServiceCredit: unsupported payToken");
     await expect(scInstance.connect(alice).setPrice(
       ethers.constants.AddressZero,
       ethers.utils.parseUnits("2", 6)))
@@ -238,9 +238,9 @@ describe("D3BridgeServiceCredit", function () {
       .to.equal(ethers.utils.parseUnits("2", 6));
 
     expect(scInstance.connect(alice).buyWithEthers({value: ethers.utils.parseUnits("1", 18)}))
-      .to.be.revertedWith("D3BridgeServiceCredit: insufficient purchasble supply"); 
+      .to.be.revertedWith("NamefiServiceCredit: insufficient purchasble supply"); 
     expect(scInstance.connect(alice).buyWithEthers({value: ethers.utils.parseUnits("1", 18)}))
-      .to.be.revertedWith("D3BridgeServiceCredit: insufficient purchasble supply"); 
+      .to.be.revertedWith("NamefiServiceCredit: insufficient purchasble supply"); 
   
     let tx = await scInstance.connect(scMinter).increaseBuyableSupply(ethers.utils.parseUnits("1000", 18));
     let rc = await tx.wait();
@@ -274,7 +274,7 @@ describe("D3BridgeServiceCredit", function () {
     await terc20.deployed();
     await terc20.grantRole(DEFAULT_ADMIN_ROLE, scMinter.address);
     await expect(scInstance.price(terc20.address))
-      .to.be.revertedWith("D3BridgeServiceCredit: unsupported payToken");
+      .to.be.revertedWith("NamefiServiceCredit: unsupported payToken");
     let tx0 = await scInstance.connect(scMinter).setPrice(
       terc20.address,
       ethers.utils.parseUnits("2", 9));
@@ -307,7 +307,7 @@ describe("D3BridgeServiceCredit", function () {
       ethers.utils.parseUnits("250", 18),
       terc20.address, 
       ethers.utils.parseUnits("400", 18)))
-        .to.be.revertedWith("D3BridgeServiceCredit: payAmount insufficient.");
+        .to.be.revertedWith("NamefiServiceCredit: payAmount insufficient.");
     let tx2 = await scInstance.connect(alice).buy(
       ethers.utils.parseUnits("250", 18),
       terc20.address, 
