@@ -14,8 +14,9 @@ import "./NamefiNFT.sol";
 import "./IChargeableERC20.sol";
 import "./IBuyableERC20.sol";
 
-/** @custom:security-contact security@d3serve.xyz
- * @custom:version v0.2
+/** 
+ * @custom:security-contact security@d3serve.xyz
+ * @custom:version V1.0.0
  * The ABI of this interface in javascript array such as
 ```
 [
