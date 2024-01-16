@@ -1,5 +1,8 @@
-# D3Bridge NFT
+# Namefi Contracts
+
 [![CI](https://github.com/d3servelabs/d3bridge-nft/actions/workflows/ci.yml/badge.svg)](https://github.com/d3servelabs/d3bridge-nft/actions/workflows/ci.yml)
+
+Formerly known as "D3Bridge NFT"
 
 ## Term
 - *NFT*: NonFungibleToken
