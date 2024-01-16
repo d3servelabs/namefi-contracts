@@ -1,4 +1,9 @@
-// SPDX-License-Identifier: Proprietary
+// SPDX-License-Identifier: Apache-2.0+
+// Author: Team Namefi by D3ServeLabs
+// https://namefi.io
+// https://d3serve.xyz
+// Security Contact: security@d3serve.xyz
+
 pragma solidity 0.8.19;
 interface IBuyableERC20PriceOracle {
     // MUST have

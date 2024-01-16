@@ -1,6 +1,6 @@
 {
-  "name": "namefi-nft",
-  "version": "1.0.0-beta",
+  "name": "namefi-contracts",
+  "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -10,7 +10,9 @@
     "clean": "hardhat clean",
     "gen712": "eip712-codegen --input namefi-struct.js --entryPoints DnsUpdateRequest > contracts/gen/NamefiStruct.sol"
   },
-  "author": "dev-team@d3serve.xyz",
+  "author": "Zainan Victor Zhou et al with Team Namefi by D3ServeLabs",
+  "license": "Apache-2.0+",
+  "homepage": "https://namefi.io",
   "devDependencies": {
     "@ensdomains/ens-contracts": "^0.0.20",
     "@ercref/contracts": "^0.1.0",
