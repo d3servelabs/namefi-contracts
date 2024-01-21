@@ -62,12 +62,13 @@ export async function nickDeployByName(
         to: NICK_DETERM_DEPLOYER,
         data: nickData,
     });
+    console.log(`Gas limit: ${gasLimit.toString()}`);
 
     let rawTx = {
         to: NICK_DETERM_DEPLOYER, // The address of the recipient
         value: ethers.utils.parseEther("0"), // The amount of ether to send
         data: nickData, // The data to be sent
-        gasPrice,
+        gasPrice: gasPrice.mul(10),
         gasLimit
     };
     let initCodeHash = ethers.utils.keccak256(initCode);

@@ -7,7 +7,7 @@ import { hexlify } from "ethers/lib/utils";
 const WAIT_FOR_BLOCK = 6;
 
 task("namefi-nick-deploy-proxy-admin", "Deploy the ProxyAdmin contract")
-    .addOptionalParam("nonce", "The nonce to use for the deployment")
+    .addOptionalParam("nonce", "The nonce to use for the deployment", "0x00000000000000000000000000000000000000005715a2bbff5b843d84e1daf8")
     .setAction(async function (taskArguments: TaskArguments, { ethers, run }) {
         let nonce = taskArguments.nonce ? taskArguments.nonce : hexlify(randomBytes(32));
         console.log(`Using nonce ${nonce}`);
