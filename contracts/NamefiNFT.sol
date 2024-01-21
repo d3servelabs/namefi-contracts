@@ -54,10 +54,10 @@ contract NamefiNFT is
     // Currently MINTER_ROLE is used for minting, burning and updating expiration time
     // until we have need more fine-grain control.
     bytes32 public constant MINTER_ROLE = keccak256("MINTER");
-    uint256 public constant CHARGE_PER_YEAR = 20 * 10 ** 18; // 20 D3BSC // TODO: decide charge amount
+    uint256 public constant CHARGE_PER_YEAR = 20 * 10 ** 18; // 20 $NFSC // TODO: decide charge amount
     string public constant CONTRACT_NAME = "NamefiNFT";
-    string public constant CONTRACT_SYMBOL = "D3B";
-    string public constant CURRENT_VERSION = "v0.0.6";
+    string public constant CONTRACT_SYMBOL = "NFNFT";
+    string public constant CURRENT_VERSION = "v1.0.0";
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -68,7 +68,7 @@ contract NamefiNFT is
         __AccessControl_init();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
-        _baseUriStr = "https://d3serve.xyz/nft/";
+        _baseUriStr = "https://namefi.io/nft/";
     }
 
     function idToNormalizedDomainName(uint256 tokenId) public view returns (string memory) {

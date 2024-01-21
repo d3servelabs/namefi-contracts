@@ -64,7 +64,7 @@ contract NamefiServiceCredit is
     }
 
     function initialize() initializer public {
-        __ERC20_init("Namefi Service Credit", "D3BSC");
+        __ERC20_init("Namefi Service Credit", "NFSC");
         __ERC20Burnable_init();
         __Pausable_init();
         __AccessControl_init();
@@ -101,7 +101,7 @@ contract NamefiServiceCredit is
         string memory domainName,
         uint256 expirationTime // unix timestamp
     ) public {
-        uint256 CHARGE = 20 * 10 ** 18; // 20 D3BSC // TODO: decide charge amount
+        uint256 CHARGE = 20 * 10 ** 18; // 20 NFSC // TODO: decide charge amount
         require(balanceOf(_msgSender()) >= CHARGE, "NamefiServiceCredit: insufficient balance");
         _burn(_msgSender(), CHARGE); // TODO(audit): check if this is safe
         NamefiNFTAddress.safeMintByNameNoCharge(mintTo, domainName, expirationTime);
