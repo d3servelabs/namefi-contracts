@@ -85,7 +85,7 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@d3serve/eip712-codegen@^6.0.8-patch2":
+"@d3serve/eip712-codegen@6.0.8-patch2":
   version "6.0.8-patch2"
   resolved "https://registry.yarnpkg.com/@d3serve/eip712-codegen/-/eip712-codegen-6.0.8-patch2.tgz#f35053c896678e41d23fc96ac2434e3c566e6fb1"
   integrity sha512-JDCkZ+FPXZY/UFfYLxQkJs2Qptxlj4mgQCSEnJrH85cdVzXJJM2x9SSzWusCVncRnN7/5fxcp8H36qSLASoBig==

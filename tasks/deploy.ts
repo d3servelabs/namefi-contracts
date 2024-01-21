@@ -94,7 +94,7 @@ task("namefi-admin-deploy", "Deploy the ProxyAdmin contract")
         const signer = signers[0];
         const { contract: proxyAdmin } = await deployByName(
             ethers,
-            "ProxyAdmin",
+            "NamefiProxyAdmin",
             [],
             signer
         );

@@ -3,6 +3,8 @@ import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-gas-reporter"
 import * as dotenv from "dotenv";
 import './tasks/deploy';
+import './tasks/nick-deploy';
+
 
 dotenv.config();
 const config: HardhatUserConfig = {
