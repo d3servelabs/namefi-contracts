@@ -1,6 +1,6 @@
 # Namefi Contracts
 
-[![CI](https://github.com/d3servelabs/namefi-nft/actions/workflows/ci.yml/badge.svg)](https://github.com/d3servelabs/namefi-nft/actions/workflows/ci.yml)
+[![CI](https://github.com/d3servelabs/namefi-contracts/actions/workflows/ci.yml/badge.svg)](https://github.com/d3servelabs/namefi-contracts/actions/workflows/ci.yml)
 
 Namefi was formerly known as "D3Bridge".
 
