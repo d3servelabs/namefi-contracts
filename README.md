@@ -19,7 +19,6 @@ https://namefi.io
 | NamefiNFT proxy | 0x0000000000cf80E7Cf8Fa4480907f692177f8e06 | [Sepolia](https://sepolia.etherscan.io/address/0x0000000000cf80E7Cf8Fa4480907f692177f8e06) |
 | NamefiNFT logic (V1) | 0x00000000f34FA72595f0B1FA90718Cdd865D6d44 | [Sepolia](https://sepolia.etherscan.io/address/0x00000000f34FA72595f0B1FA90718Cdd865D6d44) |
 
-
 ## D3Bridge (Legacy)
 
 ### ABI for NFT
