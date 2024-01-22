@@ -13,13 +13,70 @@ https://namefi.io
 
 | Name | Address | Chain |
 | ---- | ------- | ----- |
-| NamefiProxyAdmin | 0x00000000009209F45C2822E3f11b7a73014130F1 | [Sepolia](https://sepolia.etherscan.io/address/0x00000000009209f45c2822e3f11b7a73014130f1) |
-| NamefiServiceCredit | 0x0000000000c39A0F674c12A5e63eb8031B550b6f | [Sepolia](https://sepolia.etherscan.io/address/0x0000000000c39A0F674c12A5e63eb8031B550b6f) |
-| NamefiNFT | 0x0000000000cf80E7Cf8Fa4480907f692177f8e06 | [Sepolia](https://sepolia.etherscan.io/address/0x0000000000cf80E7Cf8Fa4480907f692177f8e06) |
+| NamefiProxyAdmin | 0x00000000009209F45C2822E3f11b7a73014130F1 | [Sepolia](https://sepolia.etherscan.io/address/0x00000000009209f45c2822e3f11b7a73014130f1), [Goerli](https://goerli.etherscan.io/address/0x00000000009209f45c2822e3f11b7a73014130f1) |
+| NamefiServiceCredit | 0x0000000000c39A0F674c12A5e63eb8031B550b6f | [Sepolia](https://sepolia.etherscan.io/address/0x0000000000c39A0F674c12A5e63eb8031B550b6f), [Goerli](https://Goerli.etherscan.io/address/0x0000000000c39A0F674c12A5e63eb8031B550b6f) |
+| NamefiNFT | 0x0000000000cf80E7Cf8Fa4480907f692177f8e06 | [Sepolia](https://sepolia.etherscan.io/address/0x0000000000cf80E7Cf8Fa4480907f692177f8e06), [Goerli](https://Goerli.etherscan.io/address/0x0000000000cf80E7Cf8Fa4480907f692177f8e06) |
 | ---- | ------- | ----- |
-| NamefiServiceCredit logic (V1) | 0x000000000283368D2e1200074DEf151D09B3a04a | [Sepolia](https://sepolia.etherscan.io/address/0x000000000283368D2e1200074DEf151D09B3a04a) |
-| NamefiNFT logic (V1) | 0x00000000f34FA72595f0B1FA90718Cdd865D6d44 | [Sepolia](https://sepolia.etherscan.io/address/0x00000000f34FA72595f0B1FA90718Cdd865D6d44) |
+| NamefiServiceCredit logic (V1) | 0x000000000283368D2e1200074DEf151D09B3a04a | [Sepolia](https://sepolia.etherscan.io/address/0x000000000283368D2e1200074DEf151D09B3a04a), [Goerli](https://Goerli.etherscan.io/address/0x000000000283368D2e1200074DEf151D09B3a04a) |
+| NamefiNFT logic (V1) | 0x00000000f34FA72595f0B1FA90718Cdd865D6d44 | [Sepolia](https://sepolia.etherscan.io/address/0x00000000f34FA72595f0B1FA90718Cdd865D6d44), [Goerli](https://Goerli.etherscan.io/address/0x00000000f34FA72595f0B1FA90718Cdd865D6d44) |
 
+## Step of Deployment
+
+The following `goerli` can be replaced with other chain name.
+
+### Step 1: Deploy ProxyAdmin
+
+```sh
+```sh
+npx hardhat namefi-nick-deploy-proxy-admin --network goerli --nonce 0x00000000000000000000000000000000000000005715a2bbff5b843d84e1daf8
+```
+
+When failed to verify: 
+
+```sh
+npx hardhat verify --network goerli --contract contracts/NamefiProxyAdmin.sol:NamefiProxyAdmin 0x00000000009209F45C2822E3f11b7a73014130F1 0x01Bf7f00540988622a32de1089B7DeA09a867188
+```
+
+### Step 2: Deploy NFT
+
+Deploy NFT logic contract
+
+
+```sh
+npx hardhat namefi-nick-deploy-logic --network goerli --logic-contract-name NamefiNFT --nonce 0x0000000000000000000000000000000000000000de26213fdd792730e8a811cb --dry-run
+```
+
+Should expect new address: `0x00000000f34FA72595f0B1FA90718Cdd865D6d44` (deterministic)
+
+Then Deploy the NFT proxy contract
+
+```sh
+npx hardhat namefi-nick-deploy-proxy --network goerli --logic-contract-name NamefiNFT --logic-address 0x00000000f34FA72595f0B1FA90718Cdd865D6d44 --admin-address 0x00000000009209F45C2822E3f11b7a73014130F1 --nonce 0x0000000000000000000000000000000000000000ebf9c231fad1d33999ec0da2 --dry-run
+```
+
+### Step 3: Deploy Service Credit
+
+
+Deploy Service Credit logic contract
+
+```sh
+npx hardhat namefi-nick-deploy-logic --network goerli --logic-contract-name NamefiServiceCredit --nonce 0x00000000000000000000000000000000000000005c3c1f7f262e7a0fa9eaa081 --dry-run
+```
+(could not replay, so we use the transaction data)
+
+
+Deploy the Service Credit proxy contract
+
+```sh
+npx hardhat namefi-nick-deploy-proxy --network goerli --logic-contract-name NamefiServiceCredit --logic-address 0x000000000283368D2e1200074DEf151D09B3a04a --admin-address 0x00000000009209F45C2822E3f11b7a73014130F1 --nonce 0x0000000000000000000000000000000000000000489dffcf4b44ee1731dc251d --dry-run
+```
+
+### Step 5: Other Misc
+
+Then 
+
+- Call `NamefiNFT.setServiceCreditAddress(NamefiServiceCredit.address)` https://sepolia.etherscan.io/tx/0x23341a41bd65fb4be07796f44c8cbb0b56068128c545a1540a324f0b71ed381e
+- Call `NamefiServiceCredit.grantRole(CHARGER_ROLE, NamefiNFT.address)` https://sepolia.etherscan.io/tx/0x854d9501afa3a50a0e8321275587731352877ec9002932a44f58754b26ddf65c
 
 ## D3Bridge (Legacy)
 
