@@ -32,6 +32,7 @@ export async function nickDeployByName(
     contractName: string, 
     parameters: any[],
     nonce: string,
+    dryRun: boolean = false
 ): Promise<any> /*deployed address*/ {
     // https://github.com/Zoltu/deterministic-deployment-proxy
     // https://etherscan.io/tx/0x8ee59123fee2379c81c6fed5fa4310d24b0e40027b3bb04684bde87f0e3caaf1
@@ -44,6 +45,7 @@ export async function nickDeployByName(
         throw new Error(`No data in txDeployOriginal`);
     }
     let initCode = hexlify(txDeployOriginal.data);
+    console.log(`initCode: ${initCode}`);
     let nickData = // concat the salt with the contract deployment bytecode
         "0x" +
         nonce.substring(2) +
@@ -79,18 +81,23 @@ export async function nickDeployByName(
         initCodeHash
     );
     console.log(`Sending TX, expeding new contract address: ${contractAddress}`);
-    let tx = await wallet.sendTransaction(rawTx);
-    console.log(`TX sent: ${tx.hash}`);
-    let receipt = await tx.wait();
-    // get code at address
-    let code = await ethers.provider.getCode(contractAddress);
-    if (code === "0x") {
-        throw new Error(`No code at address ${contractAddress}`);
+    if (dryRun) {
+        return { contract: null, tx: null };
     } else {
-        console.log(`Code at address ${contractAddress} is ${code}`);
-        // TODO verify the code is the same as the bytecode without the constructor
-    }
+        let tx = await wallet.sendTransaction(rawTx);
+        console.log(`TX sent: ${tx.hash}`);
+        let receipt = await tx.wait();
+        // get code at address
+        let code = await ethers.provider.getCode(contractAddress);
+        if (code === "0x") {
+            throw new Error(`No code at address ${contractAddress}`);
+        } else {
+            console.log(`Code at address ${contractAddress} is ${code}`);
+            // TODO verify the code is the same as the bytecode without the constructor
+        }
 
-    let contract = await contractFactory.attach(contractAddress);
-    return { contract, tx };
+        let contract = await contractFactory.attach(contractAddress);
+        
+        return { contract, tx };
+    }
 }

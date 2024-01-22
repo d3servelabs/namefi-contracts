@@ -37,3 +37,95 @@ task("namefi-nick-deploy-proxy-admin", "Deploy the ProxyAdmin contract")
         }).catch(e => console.log(`Failure ${e} when verifying proxyAdmin at ${proxyAdmin.address}`));
         console.log(`Done verifying proxyAdmin at ${proxyAdmin.address}`);
     });
+
+task("namefi-nick-deploy-logic", "Deploy the logic contract")
+    .addParam("logicContractName")
+    .addFlag("dryRun", "Do a dry run")
+    .addOptionalParam("nonce", "The nonce to use for the deployment")
+    .setAction(async function (taskArguments: TaskArguments, { ethers, run }) {
+        let nonce = taskArguments.nonce ? taskArguments.nonce : hexlify(randomBytes(32));
+        console.log(`Using nonce ${nonce}`);
+        if (taskArguments.dryRun) {
+            console.log(`Doing a dry run`);
+        }
+        const { contract, tx } = await nickDeployByName(
+            ethers,
+            taskArguments.logicContractName,
+            [],
+            nonce,
+            taskArguments.dryRun
+        );
+        if (taskArguments.dryRun) {
+            console.log(`Dry run done`);
+            return;
+        } else {
+            await contract.deployed();
+
+            for (let i = 0; i < WAIT_FOR_BLOCK; i++) {
+                console.log(`Block ${i}...`);
+                await tx.wait(i);
+            }
+    
+            console.log(`Done waiting for the confirmation for contract at ${contract.address}`);
+            await run("verify:verify", {
+                address: contract.address,
+            }).catch(e => console.log(`Failure ${e} when verifying contract at ${contract.address}`));
+            console.log(`Done verifying contract at ${contract.address}`);
+        }
+    });
+
+task("namefi-nick-deploy-proxy", "Deploy the proxy contract")
+    .addParam("logicContractName")
+    .addParam("logicAddress")
+    .addParam("adminAddress")
+    .addFlag("dryRun", "Do a dry run")
+    .addOptionalParam("nonce", "The nonce to use for the deployment")
+    .setAction(async function (taskArguments: TaskArguments, { ethers, run }) {
+        let nonce = taskArguments.nonce ? taskArguments.nonce : hexlify(randomBytes(32));
+        console.log(`Using nonce ${nonce}`);
+        if (taskArguments.dryRun) {
+            console.log(`Doing a dry run`);
+        }
+        const { contract: proxy, tx } = await nickDeployByName(
+            ethers,
+            "TransparentUpgradeableProxy",
+            [
+                taskArguments.logicAddress,
+                taskArguments.adminAddress,
+                // Initialization data
+                [],
+            ], 
+            nonce,
+            taskArguments.dryRun
+        );
+        if (taskArguments.dryRun) {
+            console.log(`Dry run done`);
+            return;
+        } else {
+            await tx.wait();
+
+            await proxy.deployed();
+            // attach contract to UnsafelyDestroyable
+            const proxyAsLogic = await ethers.getContractAt(
+                taskArguments.logicContractName,
+                proxy.address); 
+            await (proxyAsLogic as any).initialize();
+        
+            for (let i = 0; i < WAIT_FOR_BLOCK; i++) {
+                console.log(`Block ${i}...`);
+                await tx.wait(i);
+            }
+
+            console.log(`Done waiting for the confirmation for contract TransparentUpgradeableProxy at ${proxy.address}`);
+            await run("verify:verify", {
+                address: proxy.address,
+                constructorArguments: [
+                    taskArguments.logicAddress,
+                    taskArguments.adminAddress,
+                    // Initialization data
+                    [],
+                ],
+            }).catch(e => console.log(`Failure ${e} when verifying TransparentUpgradeableProxy at ${proxy.address}`));
+            console.log(`Done verifying TransparentUpgradeableProxy at ${proxy.address}`);
+        }
+    });

@@ -13,8 +13,8 @@ https://namefi.io
 
 | Name | Address | Chain |
 | ---- | ------- | ----- |
-| NamefiProxyAdmin | 0x00000000009209F45C2822E3f11b7a73014130F1 | [Sepolia](https://sepolia.etherscan.io/address/0x00000000009209f45c2822e3f11b7a73014130f1#readContract) |
-
+| NamefiProxyAdmin | 0x00000000009209F45C2822E3f11b7a73014130F1 | [Sepolia](https://sepolia.etherscan.io/address/0x00000000009209f45c2822e3f11b7a73014130f1) |
+| NamefiServiceCredit logic (V1) | 0x000000000283368D2e1200074DEf151D09B3a04a | [Sepolia](https://sepolia.etherscan.io/address/0x000000000283368D2e1200074DEf151D09B3a04a) |
 
 ## D3Bridge (Legacy)
 
