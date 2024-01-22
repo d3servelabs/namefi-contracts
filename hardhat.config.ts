@@ -28,6 +28,12 @@ const config: HardhatUserConfig = {
     coinmarketcap: process.env.COINMARKETCAP_API_KEY || "",
   },
   networks: {
+    mainnet: {
+      url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: {
+        mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
+      },
+    },
     sepolia: {
       url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: {

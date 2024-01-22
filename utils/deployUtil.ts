@@ -70,9 +70,15 @@ export async function nickDeployByName(
         to: NICK_DETERM_DEPLOYER, // The address of the recipient
         value: ethers.utils.parseEther("0"), // The amount of ether to send
         data: nickData, // The data to be sent
-        gasPrice: gasPrice.mul(10),
+        gasPrice: gasPrice.mul(12).div(10),
         gasLimit
     };
+    console.log("GasPrice: " + rawTx.gasPrice.toString());
+    console.log("GasLimit: " + rawTx.gasLimit.toString());
+    console.log("Estimated TX cost in ethers: " + ethers.utils.formatEther(rawTx.gasPrice.mul(rawTx.gasLimit)));
+    // Assuming 1 ethers = 2400 USD
+    console.log("Estimated TX cost in USD: " + ethers.utils.formatEther(rawTx.gasPrice.mul(rawTx.gasLimit).mul(2400)));
+
     let initCodeHash = ethers.utils.keccak256(initCode);
     console.log(`initCodeHash: ${initCodeHash}`);
     let contractAddress = ethers.utils.getCreate2Address(
