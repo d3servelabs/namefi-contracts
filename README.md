@@ -145,8 +145,7 @@ reward for reporting bugs or security flaws.
 | Critical               | 3000 $NFSC or 1ETH                                 | Bugs that requires an urgent upgrade |
 | Fatal      | 20% of Fund Recovered | Bugs or security flaws that requires recovery of fund |
 
-
-
+(Active D3Serve Labs compansated teammates are disqualified to participate this bounty program but other internal bonuses will be rewarded.)
 
 ### v0.0.1 (Goerli)
 | Name       | Address |
