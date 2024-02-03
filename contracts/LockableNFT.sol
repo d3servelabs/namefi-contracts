@@ -4,7 +4,10 @@
 // https://d3serve.xyz
 // Security Contact: security@d3serve.xyz
 
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
+
+error LockableNFT_Locked(uint256 tokenId);
+error LockableNFT_NotLocked(uint256 tokenId);
 
 /** 
  * The ABI of this interface in javascript array such as
@@ -51,12 +54,12 @@ abstract contract LockableNFT {
     function unlock(uint256 tokenId, bytes memory extra) external payable virtual;
 
     modifier whenNotLocked (uint256 tokenId, bytes memory /*extra*/) {
-        require(!_locks[tokenId], "LockableNFT: locked");
+        if (_locks[tokenId]) revert LockableNFT_Locked(tokenId);
         _;
     }
     
     modifier whenLocked (uint256 tokenId, bytes memory /*extra*/) {
-        require(_locks[tokenId], "LockableNFT: not locked");
+        if (!_locks[tokenId]) revert LockableNFT_NotLocked(tokenId);
         _;
     }
 

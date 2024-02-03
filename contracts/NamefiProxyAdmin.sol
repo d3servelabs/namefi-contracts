@@ -5,12 +5,12 @@
 // https://d3serve.xyz
 // Security Contact: security@d3serve.xyz
 
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 /** 
  * @custom:security-contact security@d3serve.xyz
- * @custom:version V1.0.0
+ * @custom:version V1.1.0
  * The ABI of this interface in javascript array such as
 ```
 [

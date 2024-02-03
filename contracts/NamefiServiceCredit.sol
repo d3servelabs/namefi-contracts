@@ -4,7 +4,7 @@
 // https://d3serve.xyz
 // Security Contact: security@d3serve.xyz
 
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
@@ -19,9 +19,28 @@ import "./NamefiNFT.sol";
 import "./IChargeableERC20.sol";
 import "./IBuyableERC20.sol";
 
+// NamefiServiceCredit: must be called by a charger
+error NamefiServiceCredit_UnauthorizedCharger(address attemptedCharger);
+// NamefiServiceCredit: must have charger role
+error NamefiServiceCredit_MustHaveChargerRole();
+
+// NamefiServiceCredit: insufficient balance
+error NamefiServiceCredit_InsufficientBalance(
+    uint256 balance, uint256 chargeAmount);
+// require(_buyableSupply >= buyAmount, "NamefiServiceCredit: insufficient buyable supply");
+error NamefiServiceCredit_InsufficientBuyableSupply(
+    uint256 buyableSupply, uint256 buyAmount);
+// NamefiServiceCredit: unsupported payToken
+error NamefiServiceCredit_UnsupportedPayToken(address payToken);
+
+// NamefiServiceCredit: payAmount insufficient.
+error NamefiServiceCredit_PayAmountInsufficient(uint256 payAmount, uint256 totalPrice);
+// NamefiServiceCredit: insufficient ethers
+error NamefiServiceCredit_InsufficientEthers();
+
 /** 
  * @custom:security-contact security@d3serve.xyz
- * @custom:version V1.0.0
+ * @custom:version V1.1.0
  * The ABI of this interface in javascript array such as
 ```
 [
@@ -102,7 +121,9 @@ contract NamefiServiceCredit is
         uint256 expirationTime // unix timestamp
     ) public {
         uint256 CHARGE = 20 * 10 ** 18; // 20 NFSC // TODO: decide charge amount
-        require(balanceOf(_msgSender()) >= CHARGE, "NamefiServiceCredit: insufficient balance");
+        if (balanceOf(_msgSender()) < CHARGE) {
+            revert NamefiServiceCredit_InsufficientBalance(balanceOf(_msgSender()), CHARGE);
+        }
         _burn(_msgSender(), CHARGE); // TODO(audit): check if this is safe
         NamefiNFTAddress.safeMintByNameNoCharge(mintTo, domainName, expirationTime);
     }
@@ -115,12 +136,19 @@ contract NamefiServiceCredit is
             bytes memory extra) external
         returns (bytes32) {
         // We might upgrade this logic to enable endorsable charges, so charger doesn't have to be the msg.sender
-        require(charger == _msgSender(), "NamefiServiceCredit: must be called by a charger");
+        // TODO: consider if we can skip this check
+        if (charger != _msgSender()) {
+            revert NamefiServiceCredit_UnauthorizedCharger(_msgSender());
+        }
 
-        require(hasRole(CHARGER_ROLE, charger), "NamefiServiceCredit: must have charger role");
+        if (!hasRole(CHARGER_ROLE, charger)) {
+            revert NamefiServiceCredit_MustHaveChargerRole();
+        }
 
         // chargee has more balance than the charge amount
-        require(balanceOf(chargee) >= amount, "NamefiServiceCredit: insufficient balance");
+        if (balanceOf(chargee) < amount) {
+            revert NamefiServiceCredit_InsufficientBalance(balanceOf(chargee), amount);
+        }
 
         // require the caller to have the CHARGER_ROLE
         _transfer(chargee, charger, amount); // TODO(audit): check if this is safe against reentry attack
@@ -134,8 +162,9 @@ contract NamefiServiceCredit is
             msg.value * 1e9  // gwei amount
             / _price(address(0)); // token wad
 
-        require(_buyableSupply >= buyAmount, 
-            "NamefiServiceCredit: insufficient buyable supply");
+        if (_buyableSupply < buyAmount) {
+            revert NamefiServiceCredit_InsufficientBuyableSupply(_buyableSupply, buyAmount);
+        }
         _buyableSupply -= buyAmount;
         _mint(_msgSender(), buyAmount);
         emit BuyToken(_msgSender(), buyAmount, address(0), msg.value);
@@ -167,7 +196,7 @@ contract NamefiServiceCredit is
         if (payPrice > 0) {
             return payPrice;
         }
-        revert("NamefiServiceCredit: unsupported payToken");
+        else revert NamefiServiceCredit_UnsupportedPayToken(payToken);
     }
     
     function setPrice(address payToken, uint256 newPrice) external override onlyRole(MINTER_ROLE) {
@@ -185,13 +214,19 @@ contract NamefiServiceCredit is
 
     function _buy(uint256 buyAmount, address payToken, uint256 payAmount) 
         internal virtual whenNotPaused {
-        require(_buyableSupply >= buyAmount, "NamefiServiceCredit: insufficient buyable supply");
+        if (_buyableSupply < buyAmount) {
+            revert NamefiServiceCredit_InsufficientBuyableSupply(_buyableSupply, buyAmount);
+        }
         
         uint256 totalPrice = _price(payToken) * (buyAmount / 1e9);
-        require(payAmount >= totalPrice, "NamefiServiceCredit: payAmount insufficient.");
+        if (payAmount < totalPrice) {
+            revert NamefiServiceCredit_PayAmountInsufficient(payAmount, totalPrice);
+        }
         
         if (payToken == address(0)) {
-            require(msg.value >= totalPrice, "NamefiServiceCredit: insufficient ethers");
+            if (msg.value < totalPrice) {
+                revert NamefiServiceCredit_InsufficientEthers();
+            }
             // the ethers is received by the contract in the amount of msg.value
         } else {
             // According to ERC20 It is not reliable to rely on the return value of
@@ -207,7 +242,10 @@ contract NamefiServiceCredit is
             // and it will need to be handled by a new standard or at least a new interface.
             IERC20Upgradeable(payToken).transferFrom(_msgSender(), address(this), totalPrice);
             uint256 afterBalance = IERC20Upgradeable(payToken).balanceOf(address(this));
-            require(afterBalance - beforeBalance >= totalPrice, "NamefiServiceCredit: incorrect payAmount");
+            uint256 payAmount2 = afterBalance - beforeBalance;
+            if (payAmount2 < totalPrice) {
+                revert NamefiServiceCredit_PayAmountInsufficient(payAmount2, totalPrice);
+            }
         }
         _mint(_msgSender(), buyAmount);
         if (payToken == address(0)) {

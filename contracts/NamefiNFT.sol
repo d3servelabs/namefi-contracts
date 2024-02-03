@@ -4,7 +4,7 @@
 // https://d3serve.xyz
 // Security Contact: security@d3serve.xyz
 
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -16,9 +16,18 @@ import "./ExpirableNFT.sol";
 import "./LockableNFT.sol";
 import "./IChargeableERC20.sol";
 import "./NamefiStruct.sol";
+
+error NamefiNFT_DomainNameNotNomalized(string domainName);
+error NamefiNFT_EpxirationDateTooEarly(uint256 expirationTime, uint256 currentBlockTime);
+error NamefiNFT_ServiceCreditContractNotSet();
+error NamefiNFT_ServiceCreditFailToCharge();
+error NamefiNFT_TransferUnauthorized();
+error NamefiNFT_URIQueryForNonexistentToken();
+error NamefiNFT_ExtendTimeNotMultipleOf365Days();
+
 /** 
  * @custom:security-contact security@d3serve.xyz
- * @custom:version V1.0.0
+ * @custom:version V1.1.0
  * The ABI of this interface in javascript array such as
 ```
 [
@@ -57,10 +66,17 @@ contract NamefiNFT is
     uint256 public constant CHARGE_PER_YEAR = 20 * 10 ** 18; // 20 $NFSC // TODO: decide charge amount
     string public constant CONTRACT_NAME = "NamefiNFT";
     string public constant CONTRACT_SYMBOL = "NFNFT";
-    string public constant CURRENT_VERSION = "v1.0.0";
+    string public constant CURRENT_VERSION = "v1.1.0";
+    
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
+    }
+
+    // This is a URI for the contract itself. It is not a tokenURI.
+    // It follows https://docs.opensea.io/docs/contract-level-metadata
+    function contractURI() public pure returns (string memory) {
+        return "https://md.namefi.io/namefi-nft.json";
     }
 
     function initialize() initializer public {
@@ -122,10 +138,12 @@ contract NamefiNFT is
         string memory domainName,
         uint256 expirationTime // same unit of block.timestamp
     ) internal virtual onlyRole(MINTER_ROLE) {
-        require(isNormalizedName(domainName), "NamefiNFT: domain name is not normalized");
+        if (!isNormalizedName(domainName)) revert NamefiNFT_DomainNameNotNomalized(domainName);
         uint256 tokenId = normalizedDomainNameToId(domainName);
         _idToDomainNameMap[tokenId] = domainName;
-        require(expirationTime > block.timestamp, "NamefiNFT: expiration time too early");
+        if (expirationTime <= block.timestamp) {
+            revert NamefiNFT_EpxirationDateTooEarly(expirationTime, block.timestamp);
+        }
         _setExpiration(tokenId, expirationTime);
         _safeMint(to, tokenId);
     }
@@ -151,7 +169,9 @@ contract NamefiNFT is
             uint256 chageAmount, 
             string memory reason, 
             bytes memory /* extraData */) internal {
-        require(_NamefiServiceCreditContract != IChargeableERC20(address(0)), "NamefiNFT: service credit contract not set");
+        if (_NamefiServiceCreditContract == IChargeableERC20(address(0))) {
+            revert NamefiNFT_ServiceCreditContractNotSet();
+        }
         // TODO: audit to protect from reentry attack
         bytes32 result = _NamefiServiceCreditContract.charge(
             address(this), 
@@ -161,7 +181,9 @@ contract NamefiNFT is
             reason,
             bytes("")
         );
-        require(result == keccak256("SUCCESS"), "NamefiNFT: charge failed");
+        if (result != keccak256("SUCCESS")) {
+            revert NamefiNFT_ServiceCreditFailToCharge();
+        }
     }
 
     function safeMintByNameWithCharge(
@@ -189,7 +211,9 @@ contract NamefiNFT is
 
     function safeTransferFromByName(address from, address to, string memory domainName) public {
         uint256 tokenId = normalizedDomainNameToId(domainName);
-        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
+        if (!_isApprovedOrOwner(_msgSender(), tokenId)) {
+            revert NamefiNFT_TransferUnauthorized();
+        }
         _idToDomainNameMap[tokenId] = domainName;
         _safeTransfer(from, to, tokenId, "");
     }
@@ -211,7 +235,9 @@ contract NamefiNFT is
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(_exists(tokenId), "NamefiNFT: URI query for nonexistent token");
+        if (!_exists(tokenId)) {
+            revert NamefiNFT_URIQueryForNonexistentToken();
+        }
         return string(abi.encodePacked(_baseURI(), _idToDomainNameMap[tokenId]));
     }
 
@@ -224,7 +250,9 @@ contract NamefiNFT is
             uint256 timeToExtend, // Same unit with expirationTime new expiration time shall be expirationTime + timeToExtend
             address chargee,
             bytes memory /* extraEata */) external virtual onlyRole(MINTER_ROLE) {
-        require(timeToExtend % 365 days == 0, "NamefiNFT: timeToExtend must be multiple of 365 days");
+        if (timeToExtend % 365 days != 0) {
+            revert NamefiNFT_ExtendTimeNotMultipleOf365Days();
+        }
         uint256 yearToExtend = timeToExtend / 365 days;
         uint256 tokenId = normalizedDomainNameToId(domainName);        
         _ensureChargeServiceCredit(
@@ -308,8 +336,12 @@ contract NamefiNFT is
         bytes memory siganture,
         bytes memory /*extraData*/
     ) internal view returns (bytes32 magicValue) {
-        require(_exists(tokenId), "NamefiNFT: URI query for nonexistent token");
-        require(_isApprovedOrOwner(signer, tokenId), "NamefiNFT: transfer caller is not owner nor approved");
+        if (!_exists(tokenId)) {
+            revert NamefiNFT_URIQueryForNonexistentToken();
+        }
+        if (!_isApprovedOrOwner(signer, tokenId)) {
+            revert NamefiNFT_TransferUnauthorized();
+        }
         if (SignatureCheckerUpgradeable.isValidSignatureNow(signer, digest, siganture)) {
             return VALID_SIG_BY_ID_MAGIC_VALUE;
         } else {

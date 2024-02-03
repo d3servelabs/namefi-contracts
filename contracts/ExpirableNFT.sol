@@ -4,7 +4,10 @@
 // https://d3serve.xyz
 // Security Contact: security@d3serve.xyz
 
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
+
+// ExpirableNFT: expired
+error ExpirableNFT_Expired(uint256 tokenId);
 
 abstract contract ExpirableNFT {
     mapping(uint256 id => uint256) private _expirations;
@@ -30,7 +33,7 @@ abstract contract ExpirableNFT {
     }
 
     modifier whenNotExpired(uint256 tokenId) {
-        require(!_isExpired(tokenId), "ExpirableNFT: expired");
+        if (_isExpired(tokenId)) revert ExpirableNFT_Expired(tokenId);
         _;
     }
 

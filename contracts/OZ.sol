@@ -4,7 +4,7 @@
 // https://d3serve.xyz
 // Security Contact: security@d3serve.xyz
 
-pragma solidity 0.8.19;
+pragma solidity ^0.8.20;
 
 // Import ProxyAdmin
 // Import TransparentUpgradeableProxy

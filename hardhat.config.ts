@@ -9,7 +9,7 @@ import './tasks/nick-deploy';
 dotenv.config();
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.19",
+    version: "0.8.24",
     settings: {
       optimizer: {
         enabled: true,
