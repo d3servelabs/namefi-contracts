@@ -28,7 +28,7 @@ error NamefiNFT_ExtendTimeNotMultipleOf365Days();
 
 /** 
  * @custom:security-contact security@d3serve.xyz
- * @custom:version V1.1.0
+ * @custom:version V1.2.0
  * The ABI of this interface in javascript array such as
 ```
 [
@@ -44,7 +44,6 @@ error NamefiNFT_ExtendTimeNotMultipleOf365Days();
     "function lockByName(string memory domainName) external",
     "function unlock(uint256 tokenId, bytes calldata extra) external payable virtual",
     "function unlockByName(string memory domainName) external",
-    "function currentChargeAmountPerYear(string memory domainName) external pure returns (uint256)",
     "function setServiceCreditContract(address addr) public"
 ]
 ```
@@ -64,10 +63,9 @@ contract NamefiNFT is
     // Currently MINTER_ROLE is used for minting, burning and updating expiration time
     // until we have need more fine-grain control.
     bytes32 public constant MINTER_ROLE = keccak256("MINTER");
-    uint256 public constant CHARGE_PER_YEAR = 20 * 10 ** 18; // 20 $NFSC // TODO: decide charge amount
     string public constant CONTRACT_NAME = "NamefiNFT";
     string public constant CONTRACT_SYMBOL = "NFNFT";
-    string public constant CURRENT_VERSION = "v1.1.0";
+    string public constant CURRENT_VERSION = "v1.2.0";
     
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -157,14 +155,6 @@ contract NamefiNFT is
         _safeMintByName(to, domainName, expirationTime);
     }
 
-    function _currentChargePerYear(string memory /*domainName*/) internal pure returns (uint256) {
-        return CHARGE_PER_YEAR;
-    }
-
-    function currentChargeAmountPerYear(string memory domainName) external pure returns (uint256) {
-        return _currentChargePerYear(domainName);
-    }
-
     function _ensureChargeServiceCredit(
             address chargee, 
             uint256 chageAmount, 
@@ -187,6 +177,7 @@ contract NamefiNFT is
         }
     }
 
+    // DEPRECATED. TODO: remove after migration.
     function safeMintByNameWithCharge(
         address to,
         string memory domainName,
@@ -196,7 +187,23 @@ contract NamefiNFT is
     ) external virtual onlyRole(MINTER_ROLE) {
         _ensureChargeServiceCredit(
             chargee, 
-            _currentChargePerYear(domainName), 
+            20e18, // HARDCODE for now. TODO: remove after migration.
+            string(abi.encodePacked("NamefiNFT: mint ", domainName)),
+            bytes(""));
+        _safeMintByName(to, domainName, expirationTime);
+    }
+
+    function safeMintByNameWithChargeAmount(
+        address to,
+        string memory domainName,
+        uint256 expirationTime, // same unit of block.timestamp
+        address chargee,
+        uint256 chargeAmount,
+        bytes memory /*extraData*/
+    ) external virtual onlyRole(MINTER_ROLE) {
+        _ensureChargeServiceCredit(
+            chargee, 
+            chargeAmount, // HARDCODE for now. TODO: remove after migration.
             string(abi.encodePacked("NamefiNFT: mint ", domainName)),
             bytes(""));
         _safeMintByName(to, domainName, expirationTime);
@@ -246,6 +253,7 @@ contract NamefiNFT is
         _setExpiration(tokenId, expirationTime);
     }
 
+    // DEPRECATED TODO: remove after migration
     function extendByNameWithCharge(
             string memory domainName, 
             uint256 timeToExtend, // Same unit with expirationTime new expiration time shall be expirationTime + timeToExtend
@@ -259,7 +267,22 @@ contract NamefiNFT is
         _ensureChargeServiceCredit(
             chargee, 
             // For simplecity we are using a per-year model.
-            _currentChargePerYear(domainName) * (yearToExtend),
+            20e18 * (yearToExtend),
+            string(abi.encodePacked("NamefiNFT: mint ", domainName)),
+            bytes(""));
+         _setExpiration(tokenId, _getExpiration(tokenId) + timeToExtend);
+    }
+
+    function extendByNameWithChargeAmount(
+            string memory domainName, 
+            uint256 timeToExtend, // Same unit with expirationTime new expiration time shall be expirationTime + timeToExtend
+            address chargee,
+            uint256 chargeAmount,
+            bytes memory /* extraEata */) external virtual onlyRole(MINTER_ROLE) {
+        uint256 tokenId = normalizedDomainNameToId(domainName);        
+        _ensureChargeServiceCredit(
+            chargee, 
+            chargeAmount,
             string(abi.encodePacked("NamefiNFT: mint ", domainName)),
             bytes(""));
          _setExpiration(tokenId, _getExpiration(tokenId) + timeToExtend);

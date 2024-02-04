@@ -113,21 +113,6 @@ contract NamefiServiceCredit is
         super._beforeTokenTransfer(from, to, amount);
     }
 
-    // TODO: update to more general approach of ERC-1363
-    function payAndSafeMintByName(
-        NamefiNFT NamefiNFTAddress,
-        address mintTo, 
-        string memory domainName,
-        uint256 expirationTime // unix timestamp
-    ) public {
-        uint256 CHARGE = 20 * 10 ** 18; // 20 NFSC // TODO: decide charge amount
-        if (balanceOf(_msgSender()) < CHARGE) {
-            revert NamefiServiceCredit_InsufficientBalance(balanceOf(_msgSender()), CHARGE);
-        }
-        _burn(_msgSender(), CHARGE); // TODO(audit): check if this is safe
-        NamefiNFTAddress.safeMintByNameNoCharge(mintTo, domainName, expirationTime);
-    }
-
     function charge(
             address charger,
             address chargee, 

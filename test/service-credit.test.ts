@@ -28,7 +28,6 @@ describe("NamefiServiceCredit", function () {
     const scDefaultAdmin = signers[1];
     const scMinter = signers[2];
     const scPauser = signers[3];
-    const scCharger = signers[4];
     const nftDefaultAdmin = signers[5];
     const nftMinter = signers[6];
     const alice =signers[7];
@@ -100,40 +99,7 @@ describe("NamefiServiceCredit", function () {
       scMinter, scPauser, scDefaultAdmin,
       nftDefaultAdmin, nftMinter,
       alice, bob, charlie };
-
   }
-
-  it("should be able to payAndSafeMintByName", async function () {
-    const { nftInstance, scInstance, 
-        scDefaultAdmin, scMinter, scPauser,
-        nftDefaultAdmin, nftMinter, 
-        alice, bob, charlie 
-      } = await loadFixture(deployFixture);    
-        await nftInstance.connect(nftDefaultAdmin).grantRole(MINTER_ROLE, scInstance.address);
-        await scInstance.connect(scMinter).mint(alice.address, ethers.utils.parseUnits("100", 18));
-        const normalizedDomainName = "bob.alice.eth";
-
-        const expirationTime =
-          (await ethers.provider.getBlock("latest")).timestamp +
-          60 * 60 * 24 * 365 * 10; // 10 days
-    
-        expect(await scInstance.connect(scMinter).balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("100", 18));
-
-        const tx = await scInstance.connect(alice)
-            .payAndSafeMintByName(
-            nftInstance.address,
-            bob.address,
-            normalizedDomainName,
-            expirationTime);
-        const rc = await tx.wait();
-        const event = rc.events?.find((e: any) => e.event === "Transfer");
-        expect(event).to.not.be.undefined;
-        expect(event?.args?.to).to.equal(ethers.constants.AddressZero);
-        expect(event?.args?.from).to.equal(alice.address);
-        expect(await nftInstance.ownerOf(ethers.utils.id(normalizedDomainName))).to.equal(bob.address);
-        expect(await nftInstance.ownerOf(ethers.utils.id("bob.alice.eth"))).to.equal(bob.address);
-        expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("80", 18));
-  });
 
   it("should be able to be charged to mint a new name", async function () {
     const { nftInstance, scInstance, 
@@ -162,6 +128,7 @@ describe("NamefiServiceCredit", function () {
             normalizedDomainName,
             expirationTime,
             alice.address, // chargee
+            ethers.utils.parseUnits("20", 18),
             []
           );
         expect(await nftInstance.ownerOf(ethers.utils.id(normalizedDomainName))).to.equal(bob.address);
@@ -169,7 +136,7 @@ describe("NamefiServiceCredit", function () {
         expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("80", 18));
   });
 
-  it("should be able to be charged to mint extend a domain with a multiple of year", async function () {
+  it("DEPRECATED should be able to be charged default amount to mint extend a domain with a multiple of year", async function () {
     const { nftInstance, scInstance, 
       scDefaultAdmin, scMinter, scPauser,
       nftDefaultAdmin, nftMinter, 
@@ -191,11 +158,12 @@ describe("NamefiServiceCredit", function () {
         await nftInstance.connect(nftDefaultAdmin).grantRole(MINTER_ROLE, nftMinter.address);
         await nftInstance.connect(nftDefaultAdmin).setServiceCreditContract(scInstance.address);
         const tx = await nftInstance.connect(nftMinter)
-          .safeMintByNameWithCharge(
+          .safeMintByNameWithChargeAmount(
             bob.address,
             normalizedDomainName,
             expirationTime,
             alice.address, // chargee
+            ethers.utils.parseUnits("20", 18),
             []
           );
         expect(await nftInstance.ownerOf(ethers.utils.id(normalizedDomainName))).to.equal(bob.address);
@@ -207,9 +175,57 @@ describe("NamefiServiceCredit", function () {
             normalizedDomainName,
             60 * 60 * 24 * 365 * 2, // 2 years
             alice.address, // chargee
+            ethers.utils.parseUnits("40", 18),
             [] // extra data
             );          
         expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("40", 18));  
+        expect(await nftInstance.getExpiration(ethers.utils.id(normalizedDomainName))).to.equal(expirationTime + 60 * 60 * 24 * 365 * 2);
+
+  });
+
+  it("should be able to be charged any amount to mint extend a domain with a multiple of year", async function () {
+    const { nftInstance, scInstance, 
+      scDefaultAdmin, scMinter, scPauser,
+      nftDefaultAdmin, nftMinter, 
+      alice, bob, charlie 
+    } = await loadFixture(deployFixture);   
+        
+        await scInstance.connect(scDefaultAdmin).grantRole(MINTER_ROLE, scMinter.address);
+        await scInstance.connect(scMinter).mint(alice.address, ethers.utils.parseUnits("100", 18));
+        await scInstance.connect(scDefaultAdmin).revokeRole(MINTER_ROLE, scMinter.address);
+
+        const normalizedDomainName = "bob.alice.eth";
+
+        const expirationTime =
+          (await ethers.provider.getBlock("latest")).timestamp +
+          60 * 60 * 24 * 365 * 3; // 3 years
+    
+        expect(await scInstance.connect(scMinter).balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("100", 18));
+        await scInstance.connect(scDefaultAdmin).grantRole(CHARGER_ROLE, nftInstance.address);
+        await nftInstance.connect(nftDefaultAdmin).grantRole(MINTER_ROLE, nftMinter.address);
+        await nftInstance.connect(nftDefaultAdmin).setServiceCreditContract(scInstance.address);
+        const tx = await nftInstance.connect(nftMinter)
+          .safeMintByNameWithChargeAmount(
+            bob.address,
+            normalizedDomainName,
+            expirationTime,
+            alice.address, // chargee
+            ethers.utils.parseUnits("60", 18),
+            []
+          );
+        expect(await nftInstance.ownerOf(ethers.utils.id(normalizedDomainName))).to.equal(bob.address);
+        expect(await nftInstance.ownerOf(ethers.utils.id("bob.alice.eth"))).to.equal(bob.address);
+        expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("40", 18));
+
+        const tx2 = await nftInstance.connect(nftMinter)
+            .extendByNameWithChargeAmount(
+            normalizedDomainName,
+            60 * 60 * 24 * 365 * 2, // 2 years
+            alice.address, // chargee
+            ethers.utils.parseUnits("18", 18),
+            [] // extra data
+            );          
+        expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("22", 18));  
         expect(await nftInstance.getExpiration(ethers.utils.id(normalizedDomainName))).to.equal(expirationTime + 60 * 60 * 24 * 365 * 2);
 
   });
