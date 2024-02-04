@@ -40,7 +40,7 @@ error NamefiServiceCredit_InsufficientEthers();
 
 /** 
  * @custom:security-contact security@d3serve.xyz
- * @custom:version V1.1.0
+ * @custom:version V1.2.0
  * The ABI of this interface in javascript array such as
 ```
 [

@@ -17,8 +17,8 @@ https://namefi.io
 | NamefiServiceCredit | 0x0000000000c39A0F674c12A5e63eb8031B550b6f | [Ethereum](https://etherscan.io/address/0x0000000000c39A0F674c12A5e63eb8031B550b6f), [Sepolia](https://sepolia.etherscan.io/address/0x0000000000c39A0F674c12A5e63eb8031B550b6f), [Goerli](https://Goerli.etherscan.io/address/0x0000000000c39A0F674c12A5e63eb8031B550b6f) |
 | NamefiNFT | 0x0000000000cf80E7Cf8Fa4480907f692177f8e06 | [Ethereum](https://etherscan.io/address/0x0000000000cf80E7Cf8Fa4480907f692177f8e06), [Sepolia](https://sepolia.etherscan.io/address/0x0000000000cf80E7Cf8Fa4480907f692177f8e06), [Goerli](https://Goerli.etherscan.io/address/0x0000000000cf80E7Cf8Fa4480907f692177f8e06) |
 | ---- | ------- | ----- |
-| NamefiServiceCredit logic (V1) | 0x000000000283368D2e1200074DEf151D09B3a04a | [Ethereum](https://etherscan.io/address/0x000000000283368D2e1200074DEf151D09B3a04a), [Sepolia](https://sepolia.etherscan.io/address/0x000000000283368D2e1200074DEf151D09B3a04a), [Goerli](https://Goerli.etherscan.io/address/0x000000000283368D2e1200074DEf151D09B3a04a) |
-| NamefiNFT logic (V1) | 0x00000000f34FA72595f0B1FA90718Cdd865D6d44 | [Ethereum](https://Ethereum.etherscan.io/address/0x00000000f34FA72595f0B1FA90718Cdd865D6d44), [Sepolia](https://sepolia.etherscan.io/address/0x00000000f34FA72595f0B1FA90718Cdd865D6d44), [Goerli](https://Goerli.etherscan.io/address/0x00000000f34FA72595f0B1FA90718Cdd865D6d44) |
+| NamefiServiceCredit logic (V1.2.0) | 0x000000005BF3eae7b67eC767e45262d26106ED93 | [Ethereum](https://etherscan.io/address/0x000000005BF3eae7b67eC767e45262d26106ED93), [Sepolia](https://sepolia.etherscan.io/address/0x000000005BF3eae7b67eC767e45262d26106ED93), [Goerli](https://Goerli.etherscan.io/address/0x000000005BF3eae7b67eC767e45262d26106ED93) |
+| NamefiNFT logic (V1.2.0) | 0x0000000066fC23B730b11098610416207db60AD7 | [Ethereum](https://Ethereum.etherscan.io/address/0x0000000066fC23B730b11098610416207db60AD7), [Sepolia](https://sepolia.etherscan.io/address/0x0000000066fC23B730b11098610416207db60AD7), [Goerli](https://Goerli.etherscan.io/address/0x0000000066fC23B730b11098610416207db60AD7) |
 
 ## Step of Deployment
 
