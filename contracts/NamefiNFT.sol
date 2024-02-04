@@ -21,7 +21,8 @@ error NamefiNFT_DomainNameNotNomalized(string domainName);
 error NamefiNFT_EpxirationDateTooEarly(uint256 expirationTime, uint256 currentBlockTime);
 error NamefiNFT_ServiceCreditContractNotSet();
 error NamefiNFT_ServiceCreditFailToCharge();
-error NamefiNFT_TransferUnauthorized();
+error NamefiNFT_TransferUnauthorized(address by, address from, address to, uint256 tokenId);
+error NamefiNFT_SignerUnauthorized(address signer, uint256 tokenId);
 error NamefiNFT_URIQueryForNonexistentToken();
 error NamefiNFT_ExtendTimeNotMultipleOf365Days();
 
@@ -212,7 +213,7 @@ contract NamefiNFT is
     function safeTransferFromByName(address from, address to, string memory domainName) public {
         uint256 tokenId = normalizedDomainNameToId(domainName);
         if (!_isApprovedOrOwner(_msgSender(), tokenId)) {
-            revert NamefiNFT_TransferUnauthorized();
+            revert NamefiNFT_TransferUnauthorized(_msgSender(), from, to, tokenId);
         }
         _idToDomainNameMap[tokenId] = domainName;
         _safeTransfer(from, to, tokenId, "");
@@ -340,7 +341,7 @@ contract NamefiNFT is
             revert NamefiNFT_URIQueryForNonexistentToken();
         }
         if (!_isApprovedOrOwner(signer, tokenId)) {
-            revert NamefiNFT_TransferUnauthorized();
+            revert NamefiNFT_SignerUnauthorized(signer, tokenId);
         }
         if (SignatureCheckerUpgradeable.isValidSignatureNow(signer, digest, siganture)) {
             return VALID_SIG_BY_ID_MAGIC_VALUE;

@@ -108,8 +108,15 @@ describe("NamefiNFT", function () {
     expect(await instance.ownerOf(ethers.utils.id("bob.alice.eth"))).to.equal(bob.address);
 
     // // Verify that holder can transfer NFT
-    await expect(instance.connect(alice).safeTransferFromByName(bob.address, charlie.address, normalizedDomainName))
-      .to.be.revertedWith("ERC721: transfer caller is not owner nor approved");
+    await expect(instance.connect(alice)
+      .safeTransferFromByName(bob.address, charlie.address, normalizedDomainName))
+      .to.be.revertedWithCustomError(instance, "NamefiNFT_TransferUnauthorized")
+      .withArgs(
+        alice.address,
+        bob.address, 
+        charlie.address, 
+        ethers.utils.id(normalizedDomainName)
+      );
     const tx0 = await instance.connect(bob).safeTransferFromByName(bob.address, charlie.address, normalizedDomainName);
     const rc0 = await tx0.wait();
     const event0 = rc0.events?.find((e: any) => e.event === "Transfer");
@@ -128,7 +135,8 @@ describe("NamefiNFT", function () {
     await expect(instance.connect(charlie).burnByName(normalizedDomainName))
       .to.be.revertedWith(/AccessControl: account.*missing role.*/);
     await expect(instance.connect(minter).burnByName(normalizedDomainName))
-      .to.be.revertedWith("LockableNFT: not locked");
+      .to.be.revertedWithCustomError(instance, "LockableNFT_NotLocked")
+      .withArgs(ethers.utils.id(normalizedDomainName));
     await instance.connect(minter).lockByName(normalizedDomainName);
     const tx1 = await instance.connect(minter).burnByName(normalizedDomainName);
     const rc1 = await tx1.wait();
@@ -155,7 +163,9 @@ describe("NamefiNFT", function () {
         bob.address,
         normalizedDomainName,
         expirationTime))
-        .to.be.revertedWith("NamefiNFT: expiration time too early");
+        // .to.be.revertedWith("NamefiNFT: expiration time too early");
+        .to.be.revertedWithCustomError(instance, "NamefiNFT_EpxirationDateTooEarly")
+        .withArgs(expirationTime, (await ethers.provider.getBlock("latest")).timestamp + 1);
     });
 
     it("Should be respected at transfering", async function () {
@@ -176,7 +186,9 @@ describe("NamefiNFT", function () {
         );
       await time.increaseTo(expirationTime + 1);
       await expect(instance.connect(bob).safeTransferFromByName(bob.address, charlie.address, normalizedDomainName))
-        .to.be.revertedWith("ExpirableNFT: expired");
+        // .to.be.revertedWith("ExpirableNFT: expired");
+        .to.be.revertedWithCustomError(instance, "ExpirableNFT_Expired")
+        .withArgs(ethers.utils.id(normalizedDomainName));
     });
   });
 
@@ -203,7 +215,8 @@ describe("NamefiNFT", function () {
       expect(event?.args?.tokenId).to.equal(ethers.utils.id(normalizedDomainName));
 
       await expect(instance.connect(charlie).safeTransferFromByName(charlie.address, bob.address, normalizedDomainName))
-        .to.be.revertedWith("LockableNFT: locked");
+        .to.be.revertedWithCustomError(instance, "LockableNFT_Locked")
+        .withArgs(ethers.utils.id(normalizedDomainName));
 
       let tx2 = await instance.connect(minter).unlockByName(normalizedDomainName);
       let rc2 = await tx2.wait();
@@ -229,7 +242,8 @@ describe("NamefiNFT", function () {
       await expect(instance.connect(bob).safeTransferFromByName(bob.address, charlie.address, normalizedDomainName))
       await instance.connect(minter).lockByName(normalizedDomainName);
       await expect(instance.connect(charlie).safeTransferFromByName(charlie.address, bob.address, normalizedDomainName))
-        .to.be.revertedWith("LockableNFT: locked");
+        .to.be.revertedWithCustomError(instance, "LockableNFT_Locked")
+      .withArgs(ethers.utils.id(normalizedDomainName));
     });
 
     it("Should be respected at burning", async function () {
@@ -246,7 +260,8 @@ describe("NamefiNFT", function () {
           normalizedDomainName,
           expirationTime));
           await expect(instance.connect(minter).burnByName(normalizedDomainName))
-            .to.be.revertedWith("LockableNFT: not locked");
+            .to.be.revertedWithCustomError(instance, "LockableNFT_NotLocked")
+      .withArgs(ethers.utils.id(normalizedDomainName));
         await instance.connect(minter).lockByName(normalizedDomainName);
         await instance.connect(minter).burnByName(normalizedDomainName);
         await expect(instance.connect(minter).burnByName(normalizedDomainName))
@@ -270,7 +285,12 @@ describe("NamefiNFT", function () {
       alice.address,
       notNormalizedDomainName,
       expirationTime,
-    )).to.be.revertedWith("NamefiNFT: domain name is not normalized");
+    )).to.be
+    // ("NamefiNFT: domain name is not normalized");
+    .revertedWithCustomError(
+      instance, "NamefiNFT_DomainNameNotNomalized"
+    ).withArgs(notNormalizedDomainName);
+
 
     const normalizedDomainName = "bob.alice.eth"; 
     expect(await instance.isNormalizedName(normalizedDomainName)).to.be.true;

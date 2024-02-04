@@ -221,7 +221,9 @@ describe("NamefiServiceCredit", function () {
       alice, bob, charlie 
     } = await loadFixture(deployFixture);   
     await expect(scInstance.price(ethers.constants.AddressZero))
-      .to.be.revertedWith("NamefiServiceCredit: unsupported payToken");
+      // .to.be.revertedWith("NamefiServiceCredit: unsupported payToken");
+      .to.be.revertedWithCustomError(scInstance, "NamefiServiceCredit_UnsupportedPayToken");
+
     await expect(scInstance.connect(alice).setPrice(
       ethers.constants.AddressZero,
       ethers.utils.parseUnits("2", 6)))
@@ -238,9 +240,8 @@ describe("NamefiServiceCredit", function () {
       .to.equal(ethers.utils.parseUnits("2", 6));
 
     expect(scInstance.connect(alice).buyWithEthers({value: ethers.utils.parseUnits("1", 18)}))
-      .to.be.revertedWith("NamefiServiceCredit: insufficient purchasble supply"); 
-    expect(scInstance.connect(alice).buyWithEthers({value: ethers.utils.parseUnits("1", 18)}))
-      .to.be.revertedWith("NamefiServiceCredit: insufficient purchasble supply"); 
+      // .to.be.revertedWith("NamefiServiceCredit: insufficient purchasble supply"); 
+      .to.be.revertedWithCustomError(scInstance, "NamefiServiceCredit_InsufficientBuyableSupply")
   
     let tx = await scInstance.connect(scMinter).increaseBuyableSupply(ethers.utils.parseUnits("1000", 18));
     let rc = await tx.wait();
@@ -274,7 +275,8 @@ describe("NamefiServiceCredit", function () {
     await terc20.deployed();
     await terc20.grantRole(DEFAULT_ADMIN_ROLE, scMinter.address);
     await expect(scInstance.price(terc20.address))
-      .to.be.revertedWith("NamefiServiceCredit: unsupported payToken");
+      // .to.be.revertedWith("NamefiServiceCredit: unsupported payToken");
+      .to.be.revertedWithCustomError(scInstance, "NamefiServiceCredit_UnsupportedPayToken");
     let tx0 = await scInstance.connect(scMinter).setPrice(
       terc20.address,
       ethers.utils.parseUnits("2", 9));
@@ -307,7 +309,8 @@ describe("NamefiServiceCredit", function () {
       ethers.utils.parseUnits("250", 18),
       terc20.address, 
       ethers.utils.parseUnits("400", 18)))
-        .to.be.revertedWith("NamefiServiceCredit: payAmount insufficient.");
+        // .to.be.revertedWith("NamefiServiceCredit: payAmount insufficient.");
+        .to.be.revertedWithCustomError(scInstance, "NamefiServiceCredit_PayAmountInsufficient");
     let tx2 = await scInstance.connect(alice).buy(
       ethers.utils.parseUnits("250", 18),
       terc20.address, 
