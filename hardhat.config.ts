@@ -34,6 +34,12 @@ const config: HardhatUserConfig = {
         mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
       },
     },
+    mainnet_blockscout: {
+      url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: {
+        mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
+      },
+    },
     sepolia: {
       url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: {
@@ -62,6 +68,7 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY as string,
+      mainnet_blockscout: process.env.BLOCKSCOUT_API_KEY as string,
       sepolia: process.env.ETHERSCAN_API_KEY as string,
       goerli: process.env.ETHERSCAN_API_KEY as string,
       goerli_blockscout: process.env.ETHERSCAN_API_KEY as string,
@@ -82,6 +89,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://eth-goerli.blockscout.com/api",
           browserURL: "https://eth-goerli.blockscout.com/"
+        }
+      },
+      {
+        network: "mainnet_blockscout",
+        chainId: 1,
+        urls: {
+          apiURL: "https://eth.blockscout.com/api",
+          browserURL: "https://eth.blockscout.com/"
         }
       }
     ]
