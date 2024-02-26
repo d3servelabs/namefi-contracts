@@ -48,6 +48,12 @@ npx hardhat namefi-nick-deploy-logic --network goerli --logic-contract-name Name
 
 Should expect new address: `0x00000000f34FA72595f0B1FA90718Cdd865D6d44` (deterministic)
 
+When failed to verify
+
+```sh
+npx hardhat verify --network goerli --contract contracts/NamefiNFT.sol:NamefiNFT 0x00000000f34FA72595f0B1FA90718Cdd865D6d44
+```
+
 Then Deploy the NFT proxy contract
 
 ```sh
