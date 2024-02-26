@@ -7,6 +7,11 @@ import './tasks/nick-deploy';
 
 
 dotenv.config();
+
+const getMnemonic = () => {
+  return process.env.MNEMONIC || "test test test test test test test test test test test junk";
+};
+
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.24",
@@ -51,14 +56,24 @@ const config: HardhatUserConfig = {
       accounts: {
         mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
       },
-      // gasPrice: 5000000000 // 5 gwei
     },
     goerli_blockscout: {
       url: `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: {
         mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
       },
-      // gasPrice: 5000000000 // 5 gwei
+    },
+    mumbai: {
+      url: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: {
+        mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
+      },
+    },
+    matic: {
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: {
+        mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
+      }
     },
     dashboard: {
       url: "http://localhost:24012/rpc",
@@ -73,6 +88,8 @@ const config: HardhatUserConfig = {
       goerli: process.env.ETHERSCAN_API_KEY as string,
       goerli_blockscout: process.env.ETHERSCAN_API_KEY as string,
       dashboard: process.env.ETHERSCAN_API_KEY as string,
+      polygon: process.env.POLYGONSCAN_API_KEY as string,
+      polygonMumbai: process.env.POLYGONSCAN_API_KEY as string,
     },
     customChains: [
       {
@@ -98,7 +115,15 @@ const config: HardhatUserConfig = {
           apiURL: "https://eth.blockscout.com/api",
           browserURL: "https://eth.blockscout.com/"
         }
-      }
+      },
+      {
+        network: "polygon",
+        chainId: 5,
+        urls: {
+          apiURL: "https://api-goerli.etherscan.io/api",
+          browserURL: "https://goerli.etherscan.io"
+        }
+      },
     ]
   },
 };
