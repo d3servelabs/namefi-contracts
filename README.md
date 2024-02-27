@@ -62,6 +62,8 @@ Deploy Service Credit logic contract
 ```sh
 npx hardhat namefi-nick-deploy-logic --network goerli --logic-contract-name NamefiServiceCredit --nonce 0x00000000000000000000000000000000000000005c3c1f7f262e7a0fa9eaa081 --dry-run
 ```
+First mainnet logic version Jan-22-2024 04:43:35 AM +UTC deployed via TX https://etherscan.io/tx/0x44cd56009903b09d7ebdf46465c2af15e9792baee61f701cb266a86e149cd5fd as 0x000000000283368D2e1200074DEf151D09B3a04a
+
 (could not replay, so we use the transaction data)
 
 
