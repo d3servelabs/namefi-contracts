@@ -78,3 +78,18 @@ task("namefi-grant-admins", "Call NamefiServiceCredit.grantRole(DEFAULT_ADMIN_RO
             console.log("No admin address provided");
         }
     });
+
+task("namefi-proxy-admin-transfer-owner", "Call NamefiServiceCredit.grantRole(DEFAULT_ADMIN_ROLE, admin) and NamefiNFT.grantRole(DEFAULT_ADMIN_ROLE, admin)")
+    .addParam("newOwner", "The new address for admim", "")
+    .addParam("proxyAdmin", "The address to proxy-admin", "")
+    .setAction(async function (taskArguments: TaskArguments, { ethers, run }) {
+        const proxyAdmin = taskArguments.proxyAdmin;
+        const proxyAdminContract = await ethers.getContractAt("NamefiProxyAdmin", proxyAdmin);
+
+        if (taskArguments.newOwner) {
+            const tx = await proxyAdminContract.transferOwnership(taskArguments.newOwner);
+            await gasReport(tx, ethers.provider);
+        } else {
+            console.log("No newOwner address provided");
+        }
+    });

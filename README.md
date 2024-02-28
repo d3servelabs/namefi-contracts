@@ -34,11 +34,13 @@ https://namefi.io
     - [Ethereum](https://etherscan.io/address/0x000000005BF3eae7b67eC767e45262d26106ED93)
     - [Sepolia](https://sepolia.etherscan.io/address/0x000000005BF3eae7b67eC767e45262d26106ED93)
     - [Goerli](https://Goerli.etherscan.io/address/0x000000005BF3eae7b67eC767e45262d26106ED93)
+    - [Mumbai](https://mumbai.polygonscan.com/address/0x000000005BF3eae7b67eC767e45262d26106ED93)
 
 - NamefiNFT logic (V1.2.0): `0x0000000066fC23B730b11098610416207db60AD7`
     - [Ethereum](https://etherscan.io/address/0x0000000066fC23B730b11098610416207db60AD7)
     - [Sepolia](https://sepolia.etherscan.io/address/0x0000000066fC23B730b11098610416207db60AD7)
     - [Goerli](https://Goerli.etherscan.io/address/0x0000000066fC23B730b11098610416207db60AD7)
+    - [Mumbai](https://mumbai.polygonscan.com/address/0x0000000066fC23B730b11098610416207db60AD7)
 
 ## Bounty
 
