@@ -62,10 +62,9 @@ Deploy Service Credit logic contract
 ```sh
 npx hardhat namefi-nick-deploy-logic --network goerli --logic-contract-name NamefiServiceCredit --nonce 0x00000000000000000000000000000000000000005c3c1f7f262e7a0fa9eaa081 --dry-run
 ```
-First mainnet logic version Jan-22-2024 04:43:35 AM +UTC deployed via TX https://etherscan.io/tx/0x44cd56009903b09d7ebdf46465c2af15e9792baee61f701cb266a86e149cd5fd as 0x000000000283368D2e1200074DEf151D09B3a04a
 
-(could not replay, so we use the transaction data)
-
+Checkout git commit: fa893a4a6bf66c952ea12131871bd99307112fa3, and 
+don't forget to *re-compile* the contract.
 
 Deploy the Service Credit proxy contract
 
@@ -77,8 +76,19 @@ npx hardhat namefi-nick-deploy-proxy --network goerli --logic-contract-name Name
 
 Then 
 
-- Call `NamefiNFT.setServiceCreditAddress(NamefiServiceCredit.address)` https://sepolia.etherscan.io/tx/0x23341a41bd65fb4be07796f44c8cbb0b56068128c545a1540a324f0b71ed381e
+- Call `NamefiNFT.setServiceCreditContract(NamefiServiceCredit.address)` https://sepolia.etherscan.io/tx/0x23341a41bd65fb4be07796f44c8cbb0b56068128c545a1540a324f0b71ed381e
+
+```sh
+npx hardhat namefi-set-nfsc-address --network goerli
+```
+
+and then
+
 - Call `NamefiServiceCredit.grantRole(CHARGER_ROLE, NamefiNFT.address)` https://sepolia.etherscan.io/tx/0x854d9501afa3a50a0e8321275587731352877ec9002932a44f58754b26ddf65c
+
+```sh
+npx hardhat namefi-grant-nft-minter --minter 0xEe15C2735eD48C80f50fe666b45fE9ec699daEE5 --network goerli
+```
 
 ## D3Bridge (Legacy)
 

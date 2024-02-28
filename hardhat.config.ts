@@ -4,7 +4,7 @@ import "hardhat-gas-reporter"
 import * as dotenv from "dotenv";
 import './tasks/deploy';
 import './tasks/nick-deploy';
-
+import './tasks/mgmt';
 
 dotenv.config();
 
