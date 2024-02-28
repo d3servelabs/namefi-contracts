@@ -57,3 +57,24 @@ task("namefi-grant-nfsc-minter", "Call NamefiServiceCredit.grantRole(MINTER_ROLE
     });
 
 
+task("namefi-grant-admins", "Call NamefiServiceCredit.grantRole(DEFAULT_ADMIN_ROLE, admin) and NamefiNFT.grantRole(DEFAULT_ADMIN_ROLE, admin)")
+    .addParam("nft", "The address to NamefiNFT", "0x0000000000cf80E7Cf8Fa4480907f692177f8e06")    
+    .addParam("nfsc", "The address to NamefiServiceCredit", "0x0000000000c39A0F674c12A5e63eb8031B550b6f")
+    .addParam("admin", "The address for admim", "")
+    .setAction(async function (taskArguments: TaskArguments, { ethers, run }) {
+        const nfsc = taskArguments.nfsc;
+        const nfscContract = await ethers.getContractAt("NamefiServiceCredit", nfsc);
+        const nft = taskArguments.nft;
+        const nftContract = await ethers.getContractAt("NamefiNFT", nft);
+
+        if (taskArguments.admin) {
+            const DEFAULT_ADMIN_ROLE = await nfscContract.DEFAULT_ADMIN_ROLE();
+            console.assert(DEFAULT_ADMIN_ROLE === await nftContract.DEFAULT_ADMIN_ROLE(), "DEFAULT_ADMIN_ROLE mismatch");
+            const tx = await nftContract.grantRole(DEFAULT_ADMIN_ROLE, taskArguments.admin);
+            await gasReport(tx, ethers.provider);
+            const tx2 = await nfscContract.grantRole(DEFAULT_ADMIN_ROLE, taskArguments.admin);
+            await gasReport(tx2, ethers.provider);
+        } else {
+            console.log("No admin address provided");
+        }
+    });
