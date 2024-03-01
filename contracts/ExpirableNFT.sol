@@ -11,15 +11,15 @@ error ExpirableNFT_Expired(uint256 tokenId);
 
 abstract contract ExpirableNFT {
     mapping(uint256 id => uint256) private _expirations;
-    
+
     function _getExpiration(uint256 tokenId) internal view returns (uint256) {
         return _expirations[tokenId];
     }
-    
+
     function getExpiration(uint256 tokenId) public view returns (uint256) {
         return _getExpiration(tokenId);
     }
-    
+
     function isExpired(uint256 tokenId) public view returns (bool) {
         return _isExpired(tokenId);
     }
@@ -37,7 +37,10 @@ abstract contract ExpirableNFT {
         _;
     }
 
-    function setExpiration(uint256 tokenId, uint256 expirationTime) public virtual;
+    function setExpiration(
+        uint256 tokenId,
+        uint256 expirationTime
+    ) public virtual;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new

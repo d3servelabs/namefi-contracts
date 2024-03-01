@@ -13,7 +13,6 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC20Upgradeable.sol";
 
-
 import "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
 import "./NamefiNFT.sol";
 import "./IChargeableERC20.sol";
@@ -26,15 +25,22 @@ error NamefiServiceCredit_MustHaveChargerRole();
 
 // NamefiServiceCredit: insufficient balance
 error NamefiServiceCredit_InsufficientBalance(
-    uint256 balance, uint256 chargeAmount);
+    uint256 balance,
+    uint256 chargeAmount
+);
 // require(_buyableSupply >= buyAmount, "NamefiServiceCredit: insufficient buyable supply");
 error NamefiServiceCredit_InsufficientBuyableSupply(
-    uint256 buyableSupply, uint256 buyAmount);
+    uint256 buyableSupply,
+    uint256 buyAmount
+);
 // NamefiServiceCredit: unsupported payToken
 error NamefiServiceCredit_UnsupportedPayToken(address payToken);
 
 // NamefiServiceCredit: payAmount insufficient.
-error NamefiServiceCredit_PayAmountInsufficient(uint256 payAmount, uint256 totalPrice);
+error NamefiServiceCredit_PayAmountInsufficient(
+    uint256 payAmount,
+    uint256 totalPrice
+);
 // NamefiServiceCredit: insufficient ethers
 error NamefiServiceCredit_InsufficientEthers();
 
@@ -63,16 +69,17 @@ error NamefiServiceCredit_InsufficientEthers();
 ]
 ```
 */
-contract NamefiServiceCredit is 
-        Initializable, 
-        ERC20Upgradeable, 
-        ERC20BurnableUpgradeable, 
-        PausableUpgradeable, 
-        AccessControlUpgradeable,
-        IChargeableERC20,
-        IBuyableERC20 {
+contract NamefiServiceCredit is
+    Initializable,
+    ERC20Upgradeable,
+    ERC20BurnableUpgradeable,
+    PausableUpgradeable,
+    AccessControlUpgradeable,
+    IChargeableERC20,
+    IBuyableERC20
+{
     uint256 private _buyableSupply; // slot 0
-    mapping(IERC20Upgradeable => uint256) private _priceMap;  // slot 1
+    mapping(IERC20Upgradeable => uint256) private _priceMap; // slot 1
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER");
     bytes32 public constant CHARGER_ROLE = keccak256("CHARGER");
@@ -82,7 +89,7 @@ contract NamefiServiceCredit is
         _disableInitializers();
     }
 
-    function initialize() initializer public {
+    function initialize() public initializer {
         __ERC20_init("Namefi Service Credit", "NFSC");
         __ERC20Burnable_init();
         __Pausable_init();
@@ -105,21 +112,21 @@ contract NamefiServiceCredit is
         _mint(to, amount);
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount)
-        internal
-        whenNotPaused
-        override
-    {
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override whenNotPaused {
         super._beforeTokenTransfer(from, to, amount);
     }
 
     function charge(
-            address charger,
-            address chargee, 
-            uint256 amount, 
-            string memory reason, 
-            bytes memory extra) external
-        returns (bytes32) {
+        address charger,
+        address chargee,
+        uint256 amount,
+        string memory reason,
+        bytes memory extra
+    ) external returns (bytes32) {
         // We might upgrade this logic to enable endorsable charges, so charger doesn't have to be the msg.sender
         // TODO: consider if we can skip this check
         if (charger != _msgSender()) {
@@ -132,7 +139,10 @@ contract NamefiServiceCredit is
 
         // chargee has more balance than the charge amount
         if (balanceOf(chargee) < amount) {
-            revert NamefiServiceCredit_InsufficientBalance(balanceOf(chargee), amount);
+            revert NamefiServiceCredit_InsufficientBalance(
+                balanceOf(chargee),
+                amount
+            );
         }
 
         // require the caller to have the CHARGER_ROLE
@@ -141,14 +151,15 @@ contract NamefiServiceCredit is
         return keccak256("SUCCESS");
     }
 
-    function buyWithEthers() payable public {
+    function buyWithEthers() public payable {
         // TODO buyableSupplyath?
-        uint256 buyAmount =
-            msg.value * 1e9  // gwei amount
-            / _price(address(0)); // token wad
+        uint256 buyAmount = (msg.value * 1e9) / _price(address(0)); // gwei amount // token wad
 
         if (_buyableSupply < buyAmount) {
-            revert NamefiServiceCredit_InsufficientBuyableSupply(_buyableSupply, buyAmount);
+            revert NamefiServiceCredit_InsufficientBuyableSupply(
+                _buyableSupply,
+                buyAmount
+            );
         }
         _buyableSupply -= buyAmount;
         _mint(_msgSender(), buyAmount);
@@ -168,9 +179,9 @@ contract NamefiServiceCredit is
         buyWithEthers();
     }
 
-    function increaseBuyableSupply(uint256 amount) public override 
-        onlyRole(MINTER_ROLE)
-        whenNotPaused {
+    function increaseBuyableSupply(
+        uint256 amount
+    ) public override onlyRole(MINTER_ROLE) whenNotPaused {
         _buyableSupply = _buyableSupply + amount; // TODO do we need SafeMath?
         emit IncreaseBuyableSupply(amount);
     }
@@ -180,34 +191,49 @@ contract NamefiServiceCredit is
         uint256 payPrice = _priceMap[IERC20Upgradeable(payToken)];
         if (payPrice > 0) {
             return payPrice;
-        }
-        else revert NamefiServiceCredit_UnsupportedPayToken(payToken);
+        } else revert NamefiServiceCredit_UnsupportedPayToken(payToken);
     }
-    
-    function setPrice(address payToken, uint256 newPrice) external override onlyRole(MINTER_ROLE) {
+
+    function setPrice(
+        address payToken,
+        uint256 newPrice
+    ) external override onlyRole(MINTER_ROLE) {
         _priceMap[IERC20Upgradeable(payToken)] = newPrice;
         emit SetPrice(payToken, newPrice);
     }
 
-    function price(address payToken) external override view returns (uint256) {
+    function price(address payToken) external view override returns (uint256) {
         return _price(payToken);
     }
-    
-    function buy(uint256 buyAmount, address payToken, uint256 payAmount) external payable virtual {
+
+    function buy(
+        uint256 buyAmount,
+        address payToken,
+        uint256 payAmount
+    ) external payable virtual {
         _buy(buyAmount, payToken, payAmount);
     }
 
-    function _buy(uint256 buyAmount, address payToken, uint256 payAmount) 
-        internal virtual whenNotPaused {
+    function _buy(
+        uint256 buyAmount,
+        address payToken,
+        uint256 payAmount
+    ) internal virtual whenNotPaused {
         if (_buyableSupply < buyAmount) {
-            revert NamefiServiceCredit_InsufficientBuyableSupply(_buyableSupply, buyAmount);
+            revert NamefiServiceCredit_InsufficientBuyableSupply(
+                _buyableSupply,
+                buyAmount
+            );
         }
-        
+
         uint256 totalPrice = _price(payToken) * (buyAmount / 1e9);
         if (payAmount < totalPrice) {
-            revert NamefiServiceCredit_PayAmountInsufficient(payAmount, totalPrice);
+            revert NamefiServiceCredit_PayAmountInsufficient(
+                payAmount,
+                totalPrice
+            );
         }
-        
+
         if (payToken == address(0)) {
             if (msg.value < totalPrice) {
                 revert NamefiServiceCredit_InsufficientEthers();
@@ -221,15 +247,26 @@ contract NamefiServiceCredit is
             // DAI: https://etherscan.io/token/0x6b175474e89094c44da98b954eedeac495271d0f#code
             // USDT: https://etherscan.io/address/0xdac17f958d2ee523a2206206994597c13d831ec7#code
 
-            uint256 beforeBalance = IERC20Upgradeable(payToken).balanceOf(address(this));
+            uint256 beforeBalance = IERC20Upgradeable(payToken).balanceOf(
+                address(this)
+            );
             // TODO consideration: transfer fee
             // the following pattern will never work if the IERC20Upgradeable(payToken) charges a transfer fee,
             // and it will need to be handled by a new standard or at least a new interface.
-            IERC20Upgradeable(payToken).transferFrom(_msgSender(), address(this), totalPrice);
-            uint256 afterBalance = IERC20Upgradeable(payToken).balanceOf(address(this));
+            IERC20Upgradeable(payToken).transferFrom(
+                _msgSender(),
+                address(this),
+                totalPrice
+            );
+            uint256 afterBalance = IERC20Upgradeable(payToken).balanceOf(
+                address(this)
+            );
             uint256 payAmount2 = afterBalance - beforeBalance;
             if (payAmount2 < totalPrice) {
-                revert NamefiServiceCredit_PayAmountInsufficient(payAmount2, totalPrice);
+                revert NamefiServiceCredit_PayAmountInsufficient(
+                    payAmount2,
+                    totalPrice
+                );
             }
         }
         _mint(_msgSender(), buyAmount);
