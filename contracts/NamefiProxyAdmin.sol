@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: Apache-2.0+
 // Author: Team Namefi by D3ServeLabs
 // https://namefi.io
@@ -31,7 +30,7 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 ]
 ```
 */
-contract NamefiProxyAdmin is ProxyAdmin { 
+contract NamefiProxyAdmin is ProxyAdmin {
     constructor(address initialOwner) ProxyAdmin() {
         _transferOwnership(initialOwner);
     }

@@ -8,7 +8,9 @@
     "compile": "hardhat compile",
     "coverage": "hardhat coverage",
     "clean": "hardhat clean",
-    "gen712": "eip712-codegen --input namefi-struct.js --entryPoints DnsUpdateRequest > contracts/gen/NamefiStruct.sol"
+    "gen712": "eip712-codegen --input namefi-struct.js --entryPoints DnsUpdateRequest > contracts/gen/NamefiStruct.sol",
+    "prettier:check": "prettier --check **/*.{sol,json,md,yml,ts} --ignore-path=.prettierignore",
+    "prettier:write": "prettier --write **/*.{sol,json,md,yml,ts} --ignore-path=.prettierignore"
   },
   "author": "Zainan Victor Zhou et al with Team Namefi by D3ServeLabs",
   "license": "Apache-2.0+",
@@ -36,6 +38,7 @@
     "hardhat": "^2.11.2",
     "hardhat-depver": "^0.0.4",
     "hardhat-gas-reporter": "^1.0.9",
+    "prettier-plugin-solidity": "1.3.1",
     "solidity-coverage": "^0.8.2",
     "ts-node": "^10.9.1",
     "typechain": "^8.1.0",

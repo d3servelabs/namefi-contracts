@@ -24,7 +24,7 @@ error LockableNFT_NotLocked(uint256 tokenId);
 */
 abstract contract LockableNFT {
     mapping(uint256 id => bool) private _locks;
-    
+
     event Lock(uint256 indexed tokenId, bytes extra);
     event Unlock(uint256 indexed tokenId, bytes extra);
 
@@ -32,11 +32,17 @@ abstract contract LockableNFT {
         return _isLocked(tokenId, bytes(""));
     }
 
-    function isLocked(uint256 tokenId, bytes calldata extra) external view returns (bool) {
+    function isLocked(
+        uint256 tokenId,
+        bytes calldata extra
+    ) external view returns (bool) {
         return _isLocked(tokenId, extra);
     }
 
-    function _isLocked(uint256 tokenId, bytes memory /*extra*/) internal view returns (bool) {
+    function _isLocked(
+        uint256 tokenId,
+        bytes memory /*extra*/
+    ) internal view returns (bool) {
         return _locks[tokenId];
     }
 
@@ -51,14 +57,17 @@ abstract contract LockableNFT {
     }
 
     function lock(uint256 tokenId, bytes memory extra) external payable virtual;
-    function unlock(uint256 tokenId, bytes memory extra) external payable virtual;
+    function unlock(
+        uint256 tokenId,
+        bytes memory extra
+    ) external payable virtual;
 
-    modifier whenNotLocked (uint256 tokenId, bytes memory /*extra*/) {
+    modifier whenNotLocked(uint256 tokenId, bytes memory /*extra*/) {
         if (_locks[tokenId]) revert LockableNFT_Locked(tokenId);
         _;
     }
-    
-    modifier whenLocked (uint256 tokenId, bytes memory /*extra*/) {
+
+    modifier whenLocked(uint256 tokenId, bytes memory /*extra*/) {
         if (!_locks[tokenId]) revert LockableNFT_NotLocked(tokenId);
         _;
     }

@@ -18,10 +18,18 @@ import "./IChargeableERC20.sol";
 import "./NamefiStruct.sol";
 
 error NamefiNFT_DomainNameNotNomalized(string domainName);
-error NamefiNFT_EpxirationDateTooEarly(uint256 expirationTime, uint256 currentBlockTime);
+error NamefiNFT_EpxirationDateTooEarly(
+    uint256 expirationTime,
+    uint256 currentBlockTime
+);
 error NamefiNFT_ServiceCreditContractNotSet();
 error NamefiNFT_ServiceCreditFailToCharge();
-error NamefiNFT_TransferUnauthorized(address by, address from, address to, uint256 tokenId);
+error NamefiNFT_TransferUnauthorized(
+    address by,
+    address from,
+    address to,
+    uint256 tokenId
+);
 error NamefiNFT_SignerUnauthorized(address signer, uint256 tokenId);
 error NamefiNFT_URIQueryForNonexistentToken();
 error NamefiNFT_ExtendTimeNotMultipleOf365Days();
@@ -48,17 +56,18 @@ error NamefiNFT_ExtendTimeNotMultipleOf365Days();
 ]
 ```
 */
-contract NamefiNFT is 
-        Initializable, 
-        ERC721Upgradeable, 
-        AccessControlUpgradeable, 
-        ExpirableNFT,
-        LockableNFT,
-        EIP712Decoder,
-        IERC5267Upgradeable {
-    string private _baseUriStr;  // Storage Slot
+contract NamefiNFT is
+    Initializable,
+    ERC721Upgradeable,
+    AccessControlUpgradeable,
+    ExpirableNFT,
+    LockableNFT,
+    EIP712Decoder,
+    IERC5267Upgradeable
+{
+    string private _baseUriStr; // Storage Slot
     mapping(uint256 id => string) private _idToDomainNameMap; //  Storage Slot
-    IChargeableERC20 public _NamefiServiceCreditContract;  // Storage Slot
+    IChargeableERC20 public _NamefiServiceCreditContract; // Storage Slot
 
     // Currently MINTER_ROLE is used for minting, burning and updating expiration time
     // until we have need more fine-grain control.
@@ -66,7 +75,7 @@ contract NamefiNFT is
     string public constant CONTRACT_NAME = "NamefiNFT";
     string public constant CONTRACT_SYMBOL = "NFNFT";
     string public constant CURRENT_VERSION = "v1.2.0";
-    
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -78,7 +87,7 @@ contract NamefiNFT is
         return "https://md.namefi.io/namefi-nft.json";
     }
 
-    function initialize() initializer public {
+    function initialize() public initializer {
         __ERC721_init(CONTRACT_NAME, CONTRACT_SYMBOL);
         __AccessControl_init();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -86,20 +95,23 @@ contract NamefiNFT is
         _baseUriStr = "https://md.namefi.io/";
     }
 
-    function idToNormalizedDomainName(uint256 tokenId) public view returns (string memory) {
+    function idToNormalizedDomainName(
+        uint256 tokenId
+    ) public view returns (string memory) {
         return _idToDomainNameMap[tokenId];
     }
-
 
     // if domainName contains any letter other than lowercase letters, numbers and ".", it is not normalized
     // in our normalized form it doens't end with "."
     // The following can be summarized as regex of /^[a-z0-9][a-z0-9\-\.]{1,253}\.$/
     // https://regex101.com/r/Sn1S3J/1
-    function isNormalizedName(string memory domainName) public pure returns (bool) {
+    function isNormalizedName(
+        string memory domainName
+    ) public pure returns (bool) {
         if (bytes(domainName).length < 3 || bytes(domainName).length > 255) {
             return false;
         }
-    
+
         // A normalized domain name must NOT end with "."
         if (bytes(domainName)[bytes(domainName).length - 1] == ".") {
             return true;
@@ -107,7 +119,11 @@ contract NamefiNFT is
 
         // A nomralized domain name must start with lower case letter or number
         bytes1 firstChar = bytes(domainName)[0];
-        if (firstChar < 0x30 || (firstChar > 0x39 && firstChar < 0x61) || firstChar > 0x7a) {
+        if (
+            firstChar < 0x30 ||
+            (firstChar > 0x39 && firstChar < 0x61) ||
+            firstChar > 0x7a
+        ) {
             return false;
         }
 
@@ -115,10 +131,10 @@ contract NamefiNFT is
         for (uint i = 1; i < bytes(domainName).length - 2; i++) {
             bytes1 char = bytes(domainName)[i];
             if (
-                !(char >= 0x30 && char <= 0x39) // 0-9
-                && !(char >= 0x61 && char <= 0x7a)  // a-z
-                && char != 0x2e // "."
-                && char != 0x2d // "-"
+                !(char >= 0x30 && char <= 0x39) && // 0-9
+                !(char >= 0x61 && char <= 0x7a) && // a-z
+                char != 0x2e && // "."
+                char != 0x2d // "-"
             ) {
                 return false;
             }
@@ -126,29 +142,34 @@ contract NamefiNFT is
 
         return true;
     }
-    
 
-    function normalizedDomainNameToId(string memory domainName) public pure returns (uint256) {
+    function normalizedDomainNameToId(
+        string memory domainName
+    ) public pure returns (uint256) {
         return uint256(keccak256(abi.encodePacked(domainName)));
     }
 
     function _safeMintByName(
-        address to, 
+        address to,
         string memory domainName,
         uint256 expirationTime // same unit of block.timestamp
     ) internal virtual onlyRole(MINTER_ROLE) {
-        if (!isNormalizedName(domainName)) revert NamefiNFT_DomainNameNotNomalized(domainName);
+        if (!isNormalizedName(domainName))
+            revert NamefiNFT_DomainNameNotNomalized(domainName);
         uint256 tokenId = normalizedDomainNameToId(domainName);
         _idToDomainNameMap[tokenId] = domainName;
         if (expirationTime <= block.timestamp) {
-            revert NamefiNFT_EpxirationDateTooEarly(expirationTime, block.timestamp);
+            revert NamefiNFT_EpxirationDateTooEarly(
+                expirationTime,
+                block.timestamp
+            );
         }
         _setExpiration(tokenId, expirationTime);
         _safeMint(to, tokenId);
     }
 
     function safeMintByNameNoCharge(
-        address to, 
+        address to,
         string memory domainName,
         uint256 expirationTime // unix timestamp
     ) external virtual onlyRole(MINTER_ROLE) {
@@ -156,18 +177,19 @@ contract NamefiNFT is
     }
 
     function _ensureChargeServiceCredit(
-            address chargee, 
-            uint256 chageAmount, 
-            string memory reason, 
-            bytes memory /* extraData */) internal {
+        address chargee,
+        uint256 chageAmount,
+        string memory reason,
+        bytes memory /* extraData */
+    ) internal {
         if (_NamefiServiceCreditContract == IChargeableERC20(address(0))) {
             revert NamefiNFT_ServiceCreditContractNotSet();
         }
         // TODO: audit to protect from reentry attack
         bytes32 result = _NamefiServiceCreditContract.charge(
-            address(this), 
-            chargee, 
-            chageAmount, 
+            address(this),
+            chargee,
+            chageAmount,
             // add string reason "NamefiNFT: mint" + domainName in one string
             reason,
             bytes("")
@@ -186,10 +208,11 @@ contract NamefiNFT is
         bytes memory /*extraData*/
     ) external virtual onlyRole(MINTER_ROLE) {
         _ensureChargeServiceCredit(
-            chargee, 
+            chargee,
             20e18, // HARDCODE for now. TODO: remove after migration.
             string(abi.encodePacked("NamefiNFT: mint ", domainName)),
-            bytes(""));
+            bytes("")
+        );
         _safeMintByName(to, domainName, expirationTime);
     }
 
@@ -202,34 +225,55 @@ contract NamefiNFT is
         bytes memory /*extraData*/
     ) external virtual onlyRole(MINTER_ROLE) {
         _ensureChargeServiceCredit(
-            chargee, 
+            chargee,
             chargeAmount, // HARDCODE for now. TODO: remove after migration.
             string(abi.encodePacked("NamefiNFT: mint ", domainName)),
-            bytes(""));
+            bytes("")
+        );
         _safeMintByName(to, domainName, expirationTime);
     }
 
-    function burnByName(string memory domainName) public 
+    function burnByName(
+        string memory domainName
+    )
+        public
         onlyRole(MINTER_ROLE)
-        whenLocked(normalizedDomainNameToId(domainName), bytes("")) {
+        whenLocked(normalizedDomainNameToId(domainName), bytes(""))
+    {
         uint256 tokenId = normalizedDomainNameToId(domainName);
         _idToDomainNameMap[tokenId] = "";
         _burn(tokenId);
     }
 
-    function safeTransferFromByName(address from, address to, string memory domainName) public {
+    function safeTransferFromByName(
+        address from,
+        address to,
+        string memory domainName
+    ) public {
         uint256 tokenId = normalizedDomainNameToId(domainName);
         if (!_isApprovedOrOwner(_msgSender(), tokenId)) {
-            revert NamefiNFT_TransferUnauthorized(_msgSender(), from, to, tokenId);
+            revert NamefiNFT_TransferUnauthorized(
+                _msgSender(),
+                from,
+                to,
+                tokenId
+            );
         }
         _idToDomainNameMap[tokenId] = domainName;
         _safeTransfer(from, to, tokenId, "");
     }
 
-    function _transfer(address from, address to, uint256 tokenId) 
+    function _transfer(
+        address from,
+        address to,
+        uint256 tokenId
+    )
+        internal
+        virtual
+        override
         whenNotLocked(tokenId, bytes(""))
         whenNotExpired(tokenId)
-        internal virtual override {
+    {
         super._transfer(from, to, tokenId);
     }
 
@@ -238,88 +282,115 @@ contract NamefiNFT is
         return _baseUriStr;
     }
 
-    function setBaseURI(string memory baseUriStr) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setBaseURI(
+        string memory baseUriStr
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _baseUriStr = baseUriStr;
     }
 
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+    function tokenURI(
+        uint256 tokenId
+    ) public view override returns (string memory) {
         if (!_exists(tokenId)) {
             revert NamefiNFT_URIQueryForNonexistentToken();
         }
-        return string(abi.encodePacked(_baseURI(), _idToDomainNameMap[tokenId]));
+        return
+            string(abi.encodePacked(_baseURI(), _idToDomainNameMap[tokenId]));
     }
 
-    function setExpiration(uint256 tokenId, uint256 expirationTime) public override onlyRole(MINTER_ROLE) {
+    function setExpiration(
+        uint256 tokenId,
+        uint256 expirationTime
+    ) public override onlyRole(MINTER_ROLE) {
         _setExpiration(tokenId, expirationTime);
     }
 
     // DEPRECATED TODO: remove after migration
     function extendByNameWithCharge(
-            string memory domainName, 
-            uint256 timeToExtend, // Same unit with expirationTime new expiration time shall be expirationTime + timeToExtend
-            address chargee,
-            bytes memory /* extraEata */) external virtual onlyRole(MINTER_ROLE) {
+        string memory domainName,
+        uint256 timeToExtend, // Same unit with expirationTime new expiration time shall be expirationTime + timeToExtend
+        address chargee,
+        bytes memory /* extraEata */
+    ) external virtual onlyRole(MINTER_ROLE) {
         if (timeToExtend % 365 days != 0) {
             revert NamefiNFT_ExtendTimeNotMultipleOf365Days();
         }
         uint256 yearToExtend = timeToExtend / 365 days;
-        uint256 tokenId = normalizedDomainNameToId(domainName);        
+        uint256 tokenId = normalizedDomainNameToId(domainName);
         _ensureChargeServiceCredit(
-            chargee, 
+            chargee,
             // For simplecity we are using a per-year model.
             20e18 * (yearToExtend),
             string(abi.encodePacked("NamefiNFT: mint ", domainName)),
-            bytes(""));
-         _setExpiration(tokenId, _getExpiration(tokenId) + timeToExtend);
+            bytes("")
+        );
+        _setExpiration(tokenId, _getExpiration(tokenId) + timeToExtend);
     }
 
     function extendByNameWithChargeAmount(
-            string memory domainName, 
-            uint256 timeToExtend, // Same unit with expirationTime new expiration time shall be expirationTime + timeToExtend
-            address chargee,
-            uint256 chargeAmount,
-            bytes memory /* extraEata */) external virtual onlyRole(MINTER_ROLE) {
-        uint256 tokenId = normalizedDomainNameToId(domainName);        
+        string memory domainName,
+        uint256 timeToExtend, // Same unit with expirationTime new expiration time shall be expirationTime + timeToExtend
+        address chargee,
+        uint256 chargeAmount,
+        bytes memory /* extraEata */
+    ) external virtual onlyRole(MINTER_ROLE) {
+        uint256 tokenId = normalizedDomainNameToId(domainName);
         _ensureChargeServiceCredit(
-            chargee, 
+            chargee,
             chargeAmount,
             string(abi.encodePacked("NamefiNFT: mint ", domainName)),
-            bytes(""));
-         _setExpiration(tokenId, _getExpiration(tokenId) + timeToExtend);
+            bytes("")
+        );
+        _setExpiration(tokenId, _getExpiration(tokenId) + timeToExtend);
     }
 
-    function lock(uint256 tokenId, bytes calldata extra) external payable override onlyRole(MINTER_ROLE) {
+    function lock(
+        uint256 tokenId,
+        bytes calldata extra
+    ) external payable override onlyRole(MINTER_ROLE) {
         _lock(tokenId, extra);
     }
-    function lockByName(string memory domainName) external onlyRole(MINTER_ROLE) {
+    function lockByName(
+        string memory domainName
+    ) external onlyRole(MINTER_ROLE) {
         uint256 tokenId = normalizedDomainNameToId(domainName);
         _lock(tokenId, bytes(""));
     }
 
-    function unlock(uint256 tokenId, bytes calldata extra) external payable override onlyRole(MINTER_ROLE) {
+    function unlock(
+        uint256 tokenId,
+        bytes calldata extra
+    ) external payable override onlyRole(MINTER_ROLE) {
         _unlock(tokenId, extra);
     }
 
-    function unlockByName(string memory domainName) external onlyRole(MINTER_ROLE) {
+    function unlockByName(
+        string memory domainName
+    ) external onlyRole(MINTER_ROLE) {
         uint256 tokenId = normalizedDomainNameToId(domainName);
         _unlock(tokenId, bytes(""));
     }
 
-    function supportsInterface(bytes4 interfaceId)
+    function supportsInterface(
+        bytes4 interfaceId
+    )
         public
         view
         override(ERC721Upgradeable, AccessControlUpgradeable)
         returns (bool)
     {
-        return super.supportsInterface(interfaceId) 
-            || interfaceId == type(IERC5267Upgradeable).interfaceId;
+        return
+            super.supportsInterface(interfaceId) ||
+            interfaceId == type(IERC5267Upgradeable).interfaceId;
     }
 
-    function setServiceCreditContract(address addr) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setServiceCreditContract(
+        address addr
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _NamefiServiceCreditContract = IChargeableERC20(addr);
     }
 
-    function getDomainHash() public view override virtual returns (bytes32) {
+    function getDomainHash() public view virtual override returns (bytes32) {
         EIP712Domain memory _input;
         _input.name = CONTRACT_NAME;
         _input.version = CURRENT_VERSION;
@@ -339,20 +410,23 @@ contract NamefiNFT is
             address verifyingContract,
             bytes32 salt,
             uint256[] memory extensions
-        ) {
-            return (
-                hex"0f", // 01111
-                CONTRACT_NAME,
-                CURRENT_VERSION,
-                block.chainid,
-                address(this),
-                bytes32(0),
-                new uint256[](0)
-            );
-        }
+        )
+    {
+        return (
+            hex"0f", // 01111
+            CONTRACT_NAME,
+            CURRENT_VERSION,
+            block.chainid,
+            address(this),
+            bytes32(0),
+            new uint256[](0)
+        );
+    }
 
-    bytes32 public constant VALID_SIG_BY_ID_MAGIC_VALUE = keccak256("VALID_SIG_BY_ID_MAGIC_VALUE");
-    bytes32 public constant VALID_SIG_BY_ID_BAD_VALUE = keccak256("VALID_SIG_BY_ID_BAD_VALUE");
+    bytes32 public constant VALID_SIG_BY_ID_MAGIC_VALUE =
+        keccak256("VALID_SIG_BY_ID_MAGIC_VALUE");
+    bytes32 public constant VALID_SIG_BY_ID_BAD_VALUE =
+        keccak256("VALID_SIG_BY_ID_BAD_VALUE");
     function _isValidSignatureByTokenId(
         uint256 tokenId,
         address signer,
@@ -366,7 +440,13 @@ contract NamefiNFT is
         if (!_isApprovedOrOwner(signer, tokenId)) {
             revert NamefiNFT_SignerUnauthorized(signer, tokenId);
         }
-        if (SignatureCheckerUpgradeable.isValidSignatureNow(signer, digest, siganture)) {
+        if (
+            SignatureCheckerUpgradeable.isValidSignatureNow(
+                signer,
+                digest,
+                siganture
+            )
+        ) {
             return VALID_SIG_BY_ID_MAGIC_VALUE;
         } else {
             return VALID_SIG_BY_ID_BAD_VALUE;
@@ -380,7 +460,14 @@ contract NamefiNFT is
         bytes memory siganture,
         bytes calldata /*extraData*/
     ) external view returns (bytes32 magicValue) {
-        return _isValidSignatureByTokenId(tokenId, signer, digest, siganture, bytes(""));
+        return
+            _isValidSignatureByTokenId(
+                tokenId,
+                signer,
+                digest,
+                siganture,
+                bytes("")
+            );
     }
 
     function isValidSignatureByName(
@@ -391,7 +478,13 @@ contract NamefiNFT is
         bytes calldata /*extraData*/
     ) external view returns (bytes32 magicValue) {
         uint256 id = normalizedDomainNameToId(name);
-        return _isValidSignatureByTokenId(id, signer, digest, siganture, bytes(""));
+        return
+            _isValidSignatureByTokenId(
+                id,
+                signer,
+                digest,
+                siganture,
+                bytes("")
+            );
     }
-
 }
