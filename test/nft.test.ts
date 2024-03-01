@@ -432,7 +432,7 @@ describe('NamefiNFT', function () {
                     expirationTime
                 )
         )
-            .to.be// ("NamefiNFT: domain name is not normalized");
+            .to.be // ("NamefiNFT: domain name is not normalized");
             .revertedWithCustomError(
                 instance,
                 'NamefiNFT_DomainNameNotNomalized'
