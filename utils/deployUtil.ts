@@ -4,6 +4,7 @@ import '@openzeppelin/hardhat-upgrades'
 import {HardhatRuntimeEnvironment} from 'hardhat/types'
 import {Signer, Wallet, getDefaultProvider} from 'ethers'
 import {Hexable, hexlify} from 'ethers/lib/utils'
+import {hardhatArguments} from 'hardhat'
 
 export const deployedContracts: any[] = []
 
@@ -57,7 +58,11 @@ export async function nickDeployByName(
     // Compose a raw transaction to send to the deployer
 
     // get gasPrice
-    let gasPrice = await ethers.provider.getGasPrice()
+    let gasPrice
+    if (process.env.GAS_PRICE) {
+        console.log(`Gas price set in .env =: ${process.env.GAS_PRICE}`)
+        gasPrice = ethers.BigNumber.from(process.env.GAS_PRICE)
+    } else gasPrice = await ethers.provider.getGasPrice()
     console.log(`Gas price: ${gasPrice.toString()}`)
     let gasLimit = await ethers.provider.estimateGas({
         to: NICK_DETERM_DEPLOYER,
@@ -65,13 +70,17 @@ export async function nickDeployByName(
     })
     console.log(`Gas limit: ${gasLimit.toString()}`)
 
+    const currentNonce = await wallet.getTransactionCount()
+    console.log(`Current wallet nonce: ${currentNonce}`)
     let rawTx = {
         to: NICK_DETERM_DEPLOYER, // The address of the recipient
         value: ethers.utils.parseEther('0'), // The amount of ether to send
         data: nickData, // The data to be sent
         gasPrice: gasPrice.mul(12).div(10),
-        gasLimit
+        gasLimit,
+        nonce: currentNonce
     }
+
     console.log('GasPrice: ' + rawTx.gasPrice.toString())
     console.log('GasLimit: ' + rawTx.gasLimit.toString())
     console.log(

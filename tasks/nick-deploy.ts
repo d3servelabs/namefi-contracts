@@ -4,7 +4,7 @@ import {nickDeployByName} from '../utils/deployUtil'
 import {randomBytes} from 'crypto'
 import {hexlify} from 'ethers/lib/utils'
 
-const WAIT_FOR_BLOCK = 6
+const WAIT_FOR_BLOCK = 12
 
 task('namefi-nick-deploy-proxy-admin', 'Deploy the ProxyAdmin contract')
     .addOptionalParam(
