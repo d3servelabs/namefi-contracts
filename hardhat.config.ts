@@ -4,7 +4,7 @@ import "hardhat-gas-reporter"
 import * as dotenv from "dotenv";
 import './tasks/deploy';
 import './tasks/nick-deploy';
-
+import './tasks/mgmt';
 
 dotenv.config();
 
@@ -75,6 +75,12 @@ const config: HardhatUserConfig = {
         mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
       }
     },
+    base: {
+      url: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: {
+        mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
+      }
+    },
     dashboard: {
       url: "http://localhost:24012/rpc",
       timeout: 1200000,
@@ -90,6 +96,7 @@ const config: HardhatUserConfig = {
       dashboard: process.env.ETHERSCAN_API_KEY as string,
       polygon: process.env.POLYGONSCAN_API_KEY as string,
       polygonMumbai: process.env.POLYGONSCAN_API_KEY as string,
+      base: process.env.BASESCAN_API_KEY as string,
     },
     customChains: [
       {
