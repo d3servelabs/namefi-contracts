@@ -77,7 +77,13 @@ npx hardhat namefi-grant-nft-minter --minter 0xEe15C2735eD48C80f50fe666b45fE9ec6
 npx hardhat namefi-grant-nfsc-minter --minter 0x1b0f291c8fFebE891886351CDfF8A304a840C8Ad --network goerli
 ```
 
+#### Upgrade to v1.2.0
 
+```sh
+npx hardhat namefi-nick-deploy-logic --logic-contract-name NamefiNFT --nonce 0x00000000000000000000000000000000000000000efaaba64cf8043a8b549f63  --network base --dry-ru
+
+npx hardhat namefi-nick-deploy-logic --logic-contract-name NamefiServiceCredit --nonce 0x00000000000000000000000000000000000000008f97345e74a9ce21a05b6887  --network base --dry-run
+```
 
 ## D3Bridge (Legacy)
 

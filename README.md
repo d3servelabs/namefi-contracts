@@ -13,31 +13,36 @@ https://namefi.io
 
 - NamefiProxyAdmin: `0x00000000009209F45C2822E3f11b7a73014130F1`
     - [Ethereum](https://etherscan.io/address/0x00000000009209f45c2822e3f11b7a73014130f1) 
+    - [Base](https://basescan.org/address/0x00000000009209f45c2822e3f11b7a73014130f1) 
     - [Sepolia](https://sepolia.etherscan.io/address/0x00000000009209f45c2822e3f11b7a73014130f1)
     - [Goerli](https://goerli.etherscan.io/address/0x00000000009209f45c2822e3f11b7a73014130f1)
     - [Mumbai](https://mumbai.polygonscan.com/address/0x00000000009209f45c2822e3f11b7a73014130f1)
 
 - NamefiServiceCredit: `0x0000000000c39A0F674c12A5e63eb8031B550b6f`
     - [Ethereum](https://etherscan.io/address/0x0000000000c39A0F674c12A5e63eb8031B550b6f)
+    - [Base](https://basescan.org/address/0x0000000000c39A0F674c12A5e63eb8031B550b6f) 
     - [Sepolia](https://sepolia.etherscan.io/address/0x0000000000c39A0F674c12A5e63eb8031B550b6f)
     - [Goerli](https://Goerli.etherscan.io/address/0x0000000000c39A0F674c12A5e63eb8031B550b6f)
     - [Mumbai](https://mumbai.polygonscan.com/address/0x0000000000c39A0F674c12A5e63eb8031B550b6f)
 
 - NamefiNFT: `0x0000000000cf80E7Cf8Fa4480907f692177f8e06`
     - [Ethereum](https://etherscan.io/address/0x0000000000cf80E7Cf8Fa4480907f692177f8e06)
+    - [Base](https://basescan.org/address/0x0000000000cf80E7Cf8Fa4480907f692177f8e06) 
     - [Sepolia](https://sepolia.etherscan.io/address/0x0000000000cf80E7Cf8Fa4480907f692177f8e06)
     - [Goerli](https://Goerli.etherscan.io/address/0x0000000000cf80E7Cf8Fa4480907f692177f8e06)
     - [Mumbai](https://mumbai.polygonscan.com/address/0x0000000000cf80E7Cf8Fa4480907f692177f8e06)
 
 ## Logic Contracts
-- NamefiServiceCredit logic (V1.2.0): `0x000000005BF3eae7b67eC767e45262d26106ED93`
+- NamefiServiceCredit logic (V1.2.0): `0x000000005BF3eae7b67eC767e45262d26106ED93` (nonce=`0x00000000000000000000000000000000000000008f97345e74a9ce21a05b6887`)
     - [Ethereum](https://etherscan.io/address/0x000000005BF3eae7b67eC767e45262d26106ED93)
+    - [Base](https://basescan.org/address/0x000000005BF3eae7b67eC767e45262d26106ED93) 
     - [Sepolia](https://sepolia.etherscan.io/address/0x000000005BF3eae7b67eC767e45262d26106ED93)
     - [Goerli](https://Goerli.etherscan.io/address/0x000000005BF3eae7b67eC767e45262d26106ED93)
     - [Mumbai](https://mumbai.polygonscan.com/address/0x000000005BF3eae7b67eC767e45262d26106ED93)
 
-- NamefiNFT logic (V1.2.0): `0x0000000066fC23B730b11098610416207db60AD7`
+- NamefiNFT logic (V1.2.0): `0x0000000066fC23B730b11098610416207db60AD7` (nonce=`0x00000000000000000000000000000000000000008f97345e74a9ce2`)
     - [Ethereum](https://etherscan.io/address/0x0000000066fC23B730b11098610416207db60AD7)
+    - [Base](https://basescan.org/address/0x0000000066fC23B730b11098610416207db60AD7) 
     - [Sepolia](https://sepolia.etherscan.io/address/0x0000000066fC23B730b11098610416207db60AD7)
     - [Goerli](https://Goerli.etherscan.io/address/0x0000000066fC23B730b11098610416207db60AD7)
     - [Mumbai](https://mumbai.polygonscan.com/address/0x0000000066fC23B730b11098610416207db60AD7)
