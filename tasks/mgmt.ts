@@ -11,15 +11,17 @@ task("namefi-set-nfsc-address", "Call NamefiNFT.setServiceCreditContract(NamefiS
         const nft = taskArguments.nft;
         const nfsc = taskArguments.nfsc;
         const nftContract = await ethers.getContractAt("NamefiNFT", nft);
-        const tx = await nftContract.setServiceCreditContract(nfsc, );
+        const tx = await nftContract.setServiceCreditContract(nfsc);
+        console.log(`Transaction hash: ${tx.hash}`);
+        await tx.wait(WAIT_FOR_BLOCK);
         
         await gasReport(tx, ethers.provider);
         
-        const nfscContract = await ethers.getContractAt("NamefiServiceCredit", nft);
+        const nfscContract = await ethers.getContractAt("NamefiServiceCredit", nfsc);
 
         const CHARGER_ROLE = await nfscContract.CHARGER_ROLE();
         const tx2 = await nfscContract.grantRole(CHARGER_ROLE, nft);
-
+        console.log(`Transaction hash of tx2: ${tx2.hash}`);
         await gasReport(tx2, ethers.provider);
     });
 
