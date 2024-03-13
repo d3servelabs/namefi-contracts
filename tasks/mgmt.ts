@@ -95,3 +95,13 @@ task("namefi-proxy-admin-transfer-owner", "Call NamefiServiceCredit.grantRole(DE
             console.log("No newOwner address provided");
         }
     });
+
+task("namefi-set-base-uri", "Call NamefiNFT.setBaseURI(`new-base-uri`)")
+    .addParam("nft", "The address to NamefiNFT", "0x0000000000cf80E7Cf8Fa4480907f692177f8e06")    
+    .addParam("newBaseUri", "The new base uri for this NFT", "")
+    .setAction(async function (taskArguments: TaskArguments, { ethers, run }) {
+        const nft = taskArguments.nft;
+        const nftContract = await ethers.getContractAt("NamefiNFT", nft);
+        const tx = await nftContract.setBaseURI(taskArguments.newBaseUri);
+        console.log(`Done setting base uri with transaction hash: ${tx.hash}`);
+    });

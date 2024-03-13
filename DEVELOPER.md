@@ -89,6 +89,15 @@ npx hardhat namefi-nick-deploy-logic --logic-contract-name NamefiServiceCredit -
 npx hardhat namefi-upgrade --proxy-address 0x0000000000c39A0F674c12A5e63eb8031B550b6f --logic-address 0x000000005BF3eae7b67eC767e45262d26106ED93 --network base
 ```
 
+### Set BaseURI
+
+```
+npx hardhat namefi-set-base-uri --new-base-uri https://md.namefi.dev/goerli/ --network goerli
+npx hardhat namefi-set-base-uri --new-base-uri https://md.namefi.dev/mumbai/ --network mumbai
+npx hardhat namefi-set-base-uri --new-base-uri https://md.namefi.run/sepolia/ --network sepolia
+npx hardhat namefi-set-base-uri --new-base-uri https://md.namefi.io/base/ --network base
+```
+
 ## D3Bridge (Legacy)
 
 ### ABI for NFT
