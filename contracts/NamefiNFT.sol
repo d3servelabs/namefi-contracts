@@ -68,7 +68,7 @@ contract NamefiNFT is
         __AccessControl_init();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
-        _baseUriStr = "https://md.namefi.io/";
+        _baseUriStr = "https://namefi.io/nft/";
     }
 
     function idToNormalizedDomainName(uint256 tokenId) public view returns (string memory) {
