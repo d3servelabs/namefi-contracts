@@ -80,9 +80,13 @@ npx hardhat namefi-grant-nfsc-minter --minter 0x1b0f291c8fFebE891886351CDfF8A304
 #### Upgrade to v1.2.0
 
 ```sh
-npx hardhat namefi-nick-deploy-logic --logic-contract-name NamefiNFT --nonce 0x00000000000000000000000000000000000000000efaaba64cf8043a8b549f63  --network base --dry-ru
+npx hardhat namefi-nick-deploy-logic --logic-contract-name NamefiNFT --nonce 0x00000000000000000000000000000000000000000efaaba64cf8043a8b549f63  --network base --dry-run
+
+npx hardhat namefi-upgrade --proxy-address 0x0000000000cf80E7Cf8Fa4480907f692177f8e06 --logic-address 0x0000000066fC23B730b11098610416207db60AD7 --network base
 
 npx hardhat namefi-nick-deploy-logic --logic-contract-name NamefiServiceCredit --nonce 0x00000000000000000000000000000000000000008f97345e74a9ce21a05b6887  --network base --dry-run
+
+npx hardhat namefi-upgrade --proxy-address 0x0000000000c39A0F674c12A5e63eb8031B550b6f --logic-address 0x000000005BF3eae7b67eC767e45262d26106ED93 --network base
 ```
 
 ## D3Bridge (Legacy)

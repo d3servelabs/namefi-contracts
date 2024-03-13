@@ -131,6 +131,14 @@ const config: HardhatUserConfig = {
           browserURL: "https://goerli.etherscan.io"
         }
       },
+      {
+        network: "base",
+        chainId: 8453,
+        urls: {
+          apiURL: "https://api.basescan.org/api",
+          browserURL: "https://basescan.org"
+        }
+      },
     ]
   },
 };
