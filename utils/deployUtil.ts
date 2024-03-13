@@ -70,7 +70,7 @@ export async function nickDeployByName(
         to: NICK_DETERM_DEPLOYER, // The address of the recipient
         value: ethers.utils.parseEther("0"), // The amount of ether to send
         data: nickData, // The data to be sent
-        gasPrice: gasPrice.mul(12).div(10),
+        gasPrice: gasPrice,
         gasLimit
     };
     console.log("GasPrice: " + rawTx.gasPrice.toString());
