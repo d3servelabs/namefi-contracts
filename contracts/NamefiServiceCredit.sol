@@ -40,7 +40,7 @@ error NamefiServiceCredit_InsufficientEthers();
 
 /** 
  * @custom:security-contact security@d3serve.xyz
- * @custom:version V1.2.0
+ * @custom:version V1.3.0
  * The ABI of this interface in javascript array such as
 ```
 [
@@ -103,6 +103,27 @@ contract NamefiServiceCredit is
 
     function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) {
         _mint(to, amount);
+    }
+
+    function mintBatch(address[] calldata receiptients, uint256[] calldata amounts, bytes calldata /*extra*/) public onlyRole(MINTER_ROLE) {
+        for (uint256 i = 0; i < receiptients.length; i++) {
+            // TODO consider reentry guard.
+            _mint(receiptients[i], amounts[i]);
+        }
+    }
+
+    function transferFromBatch(address[] calldata senders, address[] calldata receiptients, uint256[] calldata amounts, bytes calldata /*extra*/) public {
+        for (uint256 i = 0; i < receiptients.length; i++) {
+            // TODO consider reentry guard.
+            _transfer(senders[i], receiptients[i], amounts[i]);
+        }
+    }
+
+    function transferBatch(address[] calldata receiptients, uint256[] calldata amounts, bytes calldata /*extra*/) public {
+        for (uint256 i = 0; i < receiptients.length; i++) {
+            // TODO consider reentry guard.
+            _transfer(_msgSender(), receiptients[i], amounts[i]);
+        }
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 amount)

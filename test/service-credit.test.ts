@@ -101,6 +101,38 @@ describe("NamefiServiceCredit", function () {
       alice, bob, charlie };
   }
 
+  it("should be able mintBatch service credits", async function () {
+    const { nftInstance, scInstance, 
+      scDefaultAdmin, scMinter, scPauser,
+      nftDefaultAdmin, nftMinter, 
+      alice, bob, charlie 
+    } = await loadFixture(deployFixture);   
+    await scInstance.connect(scDefaultAdmin).grantRole(MINTER_ROLE, scMinter.address);
+    await scInstance.connect(scMinter).mintBatch(
+      [alice.address, bob.address], 
+      [ethers.utils.parseUnits("100", 18), ethers.utils.parseUnits("200", 18)], []);
+    expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("100", 18)); 
+    expect(await scInstance.balanceOf(bob.address)).to.equal(ethers.utils.parseUnits("200", 18));
+      
+    await scInstance.transferFromBatch(
+      [alice.address, bob.address], 
+      [charlie.address, charlie.address], 
+      [ethers.utils.parseUnits("50", 18), ethers.utils.parseUnits("100", 18)], 
+      []);
+    expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("50", 18));
+    expect(await scInstance.balanceOf(bob.address)).to.equal(ethers.utils.parseUnits("100", 18));
+    expect(await scInstance.balanceOf(charlie.address)).to.equal(ethers.utils.parseUnits("150", 18));
+
+    await scInstance.transferFromBatch(
+      [charlie.address, charlie.address], 
+      [bob.address, alice.address], 
+      [ethers.utils.parseUnits("50", 18), ethers.utils.parseUnits("100", 18)], 
+      []);
+    expect(await scInstance.balanceOf(bob.address)).to.equal(ethers.utils.parseUnits("150", 18));
+    expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("150", 18));
+    expect(await scInstance.balanceOf(charlie.address)).to.equal(ethers.utils.parseUnits("0", 18));
+  });
+
   it("should be able to be charged to mint a new name", async function () {
     const { nftInstance, scInstance, 
       scDefaultAdmin, scMinter, scPauser,
