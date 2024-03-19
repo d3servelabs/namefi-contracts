@@ -46,7 +46,10 @@ error NamefiServiceCredit_InsufficientEthers();
 [
     "function mint(address to, uint256 amount) public",
     "function charge(address charger, address chargee, uint256 amount, string memory reason, bytes memory extra) external returns (bytes32)",
-    "event Charge(address charger, address chargee, uint256 amount, string reason, bytes extra)"
+    "function mintBatch(address[] calldata receiptients, uint256[] calldata amounts, bytes calldata)",
+    "function transferFromBatch(address[] calldata senders, address[] calldata receiptients, uint256[] calldata amounts, bytes calldata)",
+    "function transferBatch(address[] calldata receiptients, uint256[] calldata amounts, bytes calldata)",
+    "event Charge(address charger, address chargee, uint256 amount, string reason, bytes extra)",
 
     // ERC20
     "function name() external view returns (string memory)",
