@@ -33,12 +33,12 @@ https://namefi.io
     - [Mumbai](https://mumbai.polygonscan.com/address/0x0000000000cf80E7Cf8Fa4480907f692177f8e06)
 
 ## Logic Contracts
-- NamefiServiceCredit logic (V1.2.0): `0x000000005BF3eae7b67eC767e45262d26106ED93` (nonce=`0x00000000000000000000000000000000000000008f97345e74a9ce21a05b6887`)
-    - [Ethereum](https://etherscan.io/address/0x000000005BF3eae7b67eC767e45262d26106ED93)
-    - [Base](https://basescan.org/address/0x000000005BF3eae7b67eC767e45262d26106ED93) 
-    - [Sepolia](https://sepolia.etherscan.io/address/0x000000005BF3eae7b67eC767e45262d26106ED93)
-    - [Goerli](https://Goerli.etherscan.io/address/0x000000005BF3eae7b67eC767e45262d26106ED93)
-    - [Mumbai](https://mumbai.polygonscan.com/address/0x000000005BF3eae7b67eC767e45262d26106ED93)
+- NamefiServiceCredit logic (V1.3.0): `0x0000000008f774D350fDb33Fe8D81a230de2ea89` (nonce=`0x00000000000000000000000000000000000000006101b4b3a13d8701198a0cb5`)
+    - [Ethereum](https://etherscan.io/address/0x0000000008f774D350fDb33Fe8D81a230de2ea89)
+    - [Base](https://basescan.org/address/0x0000000008f774D350fDb33Fe8D81a230de2ea89) 
+    - [Sepolia](https://sepolia.etherscan.io/address/0x0000000008f774D350fDb33Fe8D81a230de2ea89)
+    - Goerli - deprecated
+    - [Mumbai](https://mumbai.polygonscan.com/address/0x0000000008f774D350fDb33Fe8D81a230de2ea89)
 
 - NamefiNFT logic (V1.2.0): `0x0000000066fC23B730b11098610416207db60AD7` (nonce=`0x00000000000000000000000000000000000000008f97345e74a9ce2`)
     - [Ethereum](https://etherscan.io/address/0x0000000066fC23B730b11098610416207db60AD7)
