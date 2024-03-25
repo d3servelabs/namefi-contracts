@@ -1,5 +1,4 @@
 name: CI
-on: [push]
 # Environment variables
 env:
   MNEMONIC: ${{ secrets.MNEMONIC }}
@@ -7,26 +6,158 @@ env:
   COINMARKETCAP_API_KEY: ${{ vars.COINMARKETCAP_API_KEY }}
   ALCHEMY_API_KEY: ${{ vars.ALCHEMY_API_KEY }}
   ETHERSCAN_API_KEY: ${{ vars.ETHERSCAN_API_KEY }}
-jobs:
-  build:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set Node.js 18.x
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18.x
 
-      - name: Run install
-        uses: borales/actions-yarn@v4
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  Unit-Tests:
+    runs-on: ubuntu-latest
+    name: Tests
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2.4.0
         with:
-          cmd: install # will run `yarn install` command
-      - name: Compile contracts
-        uses: borales/actions-yarn@v4
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
         with:
-          cmd: compile # will run `yarn compile` command
-      - name: Test the app
-        uses: borales/actions-yarn@v4
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm i --frozen-lockfile
+
+      - name: Build application
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+  TypeScript-Static-Analyis:
+    runs-on: ubuntu-latest
+    name: TypeScript static analysis
+    needs: Unit-Tests
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2.4.0
         with:
-          cmd: test # will run `yarn test` command
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm i --frozen-lockfile
+
+      - name: Build application
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint-ts
+
+  Solidity-Static-Analysis-Solhint:
+    runs-on: ubuntu-latest
+    name: Solidity static analysis (Solhint)
+    needs: Unit-Tests
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2.4.0
+        with:
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm i --frozen-lockfile
+
+      - name: Build application
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint-sol
+
+  Solidity-Static-Analysis-Slither:
+    runs-on: ubuntu-latest
+    name: Solidity static analysis (Slither)
+    needs: Unit-Tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2.4.0
+        with:
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm i --frozen-lockfile
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+          architecture: "x64"
+
+      - name: Install Slither
+        run: pip3 install slither-analyzer
+
+      - name: Slither Static Analysis
+        run: slither . --config-file slither.json
