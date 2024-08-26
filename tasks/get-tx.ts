@@ -8,6 +8,8 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
+// How to run:
+//   npx hardhat get-mint-txs --address 0x0000000000c39A0F674c12A5e63eb8031B550b6f
 task("get-mint-txs", "Get latest mint transactions for an ERC-20 token")
   .addParam("address", "The ERC-20 token contract address")
   .setAction(async (taskArgs, hre) => {
@@ -48,20 +50,40 @@ task("get-mint-txs", "Get latest mint transactions for an ERC-20 token")
 
 
   // Create CSV content
-  let csvContent = "Transaction DateTime, Payer Address,Transaction Hash,Ethers Paid,ERC-20 Tokens Received\n";
+  let csvContent = "Transaction DateTime,ENS Name,Payer Address,Transaction Hash,Ethers Paid,ERC-20 Tokens Received\n";
 
+  let knownEnsNames:any = {};
   for (let i = 0; i < paymentTxes.length; i++) {
     const tx = paymentTxes[i]!;
     const erc20Tx = erc20HashToTx.get(tx.hash);
-    
     const payerAddress = tx.from;
+    // Get ENS name for the payer address
+    let ensName
+    if (payerAddress in knownEnsNames) {
+        ensName = knownEnsNames[payerAddress];
+    } else {
+        try {
+            const provider = new ethers.providers.AlchemyProvider('mainnet', config.apiKey);
+            ensName = await provider.lookupAddress(payerAddress);
+            if (!ensName) {
+              ensName = 'null';
+            }
+            knownEnsNames[payerAddress] = ensName;
+      
+          } catch (error) {
+            console.error(`Error fetching ENS name for ${payerAddress}:`, error);
+          }
+          
+    }
+
+
     const txHash = tx.hash;
     const ethersPaid = ethers.utils.formatEther(tx.value);
     const tokensReceived = erc20Tx.value;
     const block = await alchemy.core.getBlock(tx.blockNumber!);
     const blockTime = new Date(block.timestamp * 1000).toISOString();
 
-    csvContent += `${blockTime},https://etherscan.io/address/${payerAddress},https://etherscan.io/tx/${txHash},${ethersPaid},${tokensReceived}\n`;
+    csvContent += `${blockTime},${ensName},https://etherscan.io/address/${payerAddress},https://etherscan.io/tx/${txHash},${ethersPaid},${tokensReceived}\n`;
   }
 
   // Create output directory if it doesn't exist
