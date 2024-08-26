@@ -45,6 +45,7 @@
     "@d3serve/eip712-codegen": "6.0.8-patch2",
     "@nomicfoundation/hardhat-verify": "^2.0.4",
     "@openzeppelin/contracts-upgradeable": "^4.9.3",
+    "alchemy-sdk": "^3.4.1",
     "prb-math": "^2.4.3"
   }
 }
