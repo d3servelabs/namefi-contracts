@@ -5,6 +5,7 @@ import * as dotenv from "dotenv";
 import './tasks/deploy';
 import './tasks/nick-deploy';
 import './tasks/mgmt';
+import './tasks/get-tx';
 
 dotenv.config();
 
