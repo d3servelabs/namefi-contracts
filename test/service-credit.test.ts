@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { deployByName } from "../utils/deployUtil";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 
@@ -18,9 +18,21 @@ describe("NamefiServiceCredit", function () {
   );
   console.log(`CHARGER_ROLE = `, CHARGER_ROLE);
 
+  const CHAINLINK_ETH_USD_FEED = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419";
 
   // deployFixture
   async function deployFixture() {
+
+    // Fork mainnet
+    await network.provider.request({
+      method: "hardhat_reset",
+      params: [{
+        forking: {
+          jsonRpcUrl: process.env.MAINNET_RPC_URL,
+        }
+      }]
+    });
+
     const contractDeploySigner = ethers.Wallet.fromMnemonic(
       "test test test test test test test test test test test junk"
     ).connect(ethers.provider);
@@ -79,6 +91,8 @@ describe("NamefiServiceCredit", function () {
     await scInstance.connect(contractDeploySigner).renounceRole(MINTER_ROLE, contractDeploySigner.address);
     expect(await scInstance.hasRole(DEFAULT_ADMIN_ROLE, contractDeploySigner.address)).to.be.false;
     await scInstance.connect(scDefaultAdmin).grantRole(PAUSER_ROLE, scPauser.address);
+
+    await scInstance.connect(scDefaultAdmin).setEthUsdPriceFeed(CHAINLINK_ETH_USD_FEED);
 
     // Output the following account's address
     console.log("contractDeploySigner ", contractDeploySigner.address);
@@ -291,23 +305,27 @@ describe("NamefiServiceCredit", function () {
       // .to.be.revertedWith("NamefiServiceCredit: insufficient purchasble supply"); 
       .to.be.revertedWithCustomError(scInstance, "NamefiServiceCredit_InsufficientBuyableSupply")
   
-    let tx = await scInstance.connect(scMinter).increaseBuyableSupply(ethers.utils.parseUnits("1000", 18));
+    let tx = await scInstance.connect(scMinter).increaseBuyableSupply(ethers.utils.parseUnits("10000", 18));
     let rc = await tx.wait();
     let event = rc.events?.find((e: any) => e.event === "IncreaseBuyableSupply");
     expect(event).to.not.be.undefined;
-    expect(event?.args?.increaseBy).to.equal(ethers.utils.parseUnits("1000", 18));
-    expect(await scInstance.connect(scMinter).buyableSupply()).to.equal(ethers.utils.parseUnits("1000", 18));
+    expect(event?.args?.increaseBy).to.equal(ethers.utils.parseUnits("10000", 18));
+    expect(await scInstance.connect(scMinter).buyableSupply()).to.equal(ethers.utils.parseUnits("10000", 18));
+
+    const ethUsdPrice = await scInstance.getEthUsdPrice();
+
+    const expectedTokens = ethers.utils.parseUnits("0.5", 18).mul(1e9).div(ethUsdPrice);
 
     let tx2 = await scInstance.connect(alice).buyWithEthers({value: ethers.utils.parseUnits("0.5", 18)});
     // check that tx2 contains the event BuyToken
     rc = await tx2.wait();
     event = rc.events?.find((e: any) => e.event === "BuyToken");
     expect(event).to.not.be.undefined;
-    expect(event?.args?.buyAmount).to.equal(ethers.utils.parseUnits("250", 18));
+    expect(event?.args?.buyAmount).to.equal(expectedTokens);
     expect(event?.args?.buyer).to.equal(alice.address);
     expect(event?.args?.payToken).to.equal(ethers.constants.AddressZero);
     expect(event?.args?.payAmount).to.equal(ethers.utils.parseUnits("0.5", 18));
-    expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("250", 18));
+    expect(await scInstance.balanceOf(alice.address)).to.equal(expectedTokens);
   });
 
 
