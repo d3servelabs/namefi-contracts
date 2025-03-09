@@ -310,6 +310,92 @@ describe("NamefiServiceCredit", function () {
     expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("250", 18));
   });
 
+  // Should be buyable with Ethers at different price.
+  // Handle cases when 1ETH = 2000USD, 3000USD, 5000USD 
+  describe("Buy with Ethers at different price", async () => {
+
+    const ETH_TO_NFSC_PRICES = [
+      850,
+      2000, 
+      3000, 
+      5000,
+      2136,
+      10000, 
+    ];
+    
+    for (const price of ETH_TO_NFSC_PRICES) {
+      // run the test sequentially
+
+      const payingEthAmount = 0.5; // 0.5ETH
+      const payingEthAmountInWei = ethers.utils.parseUnits(payingEthAmount.toString(), 18);
+      const expectedNFSCAmount = payingEthAmount * price;
+      const expectedNFSCAmountInWei = ethers.utils.parseUnits(expectedNFSCAmount.toString(), 18);
+      await it.only(`should be able buy NFSC with ${payingEthAmount} ethers at ${price} and get ${expectedNFSCAmount} NFSC`, async function () {
+        const { nftInstance, scInstance, 
+          scDefaultAdmin, scMinter, scPauser,
+        nftDefaultAdmin, nftMinter, 
+        alice, bob, charlie 
+      } = await loadFixture(deployFixture);   
+      
+
+      const priceGWadOfNFSCPerGWadOfETH = 
+        ethers.utils.parseUnits("1", 18).div(ethers.utils.parseUnits(price.toString(), 9));
+
+      await expect(scInstance.price(ethers.constants.AddressZero))
+        // .to.be.revertedWith("NamefiServiceCredit: unsupported payToken");
+        .to.be.revertedWithCustomError(scInstance, "NamefiServiceCredit_UnsupportedPayToken");
+  
+      console.log(`For current price: ${price}, SetPrice input (priceGWadOfNFSCPerGWadOfETH) = ${priceGWadOfNFSCPerGWadOfETH}`);
+      await expect(scInstance.connect(alice).setPrice(
+        ethers.constants.AddressZero,
+        priceGWadOfNFSCPerGWadOfETH))
+        .to.be.revertedWith(/^AccessControl.*is missing role/);
+      let tx0 = await scInstance.connect(scMinter).setPrice(
+        ethers.constants.AddressZero,
+        priceGWadOfNFSCPerGWadOfETH);
+      let rc0 = await tx0.wait();
+      let event0 = rc0.events?.find((e: any) => e.event === "SetPrice");
+      expect(event0).to.not.be.undefined;
+      expect(event0?.args?.payToken).to.equal(ethers.constants.AddressZero);
+      expect(event0?.args?.price).to.equal(priceGWadOfNFSCPerGWadOfETH);
+      expect(await scInstance.price(ethers.constants.AddressZero))
+        .to.equal(priceGWadOfNFSCPerGWadOfETH);
+  
+      expect(scInstance.connect(alice).buyWithEthers({value: payingEthAmountInWei}))
+        // .to.be.revertedWith("NamefiServiceCredit: insufficient purchasble supply"); 
+        .to.be.revertedWithCustomError(scInstance, "NamefiServiceCredit_InsufficientBuyableSupply")
+    
+      const increaseSupplyAmountInGwei = ethers.utils.parseUnits("100000", 18); // Increase supply by 100000 NFSC, should be large enough to buy.
+      let tx = await scInstance.connect(scMinter).increaseBuyableSupply(increaseSupplyAmountInGwei);
+      let rc = await tx.wait();
+      let event = rc.events?.find((e: any) => e.event === "IncreaseBuyableSupply");
+      expect(event).to.not.be.undefined;
+      expect(event?.args?.increaseBy).to.equal(increaseSupplyAmountInGwei);
+      expect(await scInstance.connect(scMinter).buyableSupply()).to.equal(increaseSupplyAmountInGwei);
+  
+      // print out how much ETH we are using to buy and expected NFSC amount
+      console.log(`Assuming current price: ${price}`);
+      console.log(`Number of ETH used to buy: ${payingEthAmount}`);
+      console.log(`Expected NFSC amount purchased: ${expectedNFSCAmount}`);
+      let tx2 = await scInstance.connect(alice).buyWithEthers({value: payingEthAmountInWei});
+      // check that tx2 contains the event BuyToken
+      rc = await tx2.wait();
+      event = rc.events?.find((e: any) => e.event === "BuyToken");
+      expect(event).to.not.be.undefined;
+      // There will be a small difference due to the precision of the floating point number.
+      const allowedDifferenceRatio = 0.00001; // 1e-5
+      const actualNFSCAmountInWei = event?.args?.buyAmount;
+      const actualDifferenceRatio = actualNFSCAmountInWei.sub(expectedNFSCAmountInWei).div(expectedNFSCAmountInWei).toNumber();
+      console.log(`Actual difference ratio: ${actualDifferenceRatio}`);
+      expect(actualDifferenceRatio).to.be.lessThan(allowedDifferenceRatio);
+
+      expect(event?.args?.buyer).to.equal(alice.address);
+      expect(event?.args?.payToken).to.equal(ethers.constants.AddressZero);
+      expect(event?.args?.payAmount).to.equal(payingEthAmountInWei);
+      expect(await scInstance.balanceOf(alice.address)).to.equal(actualNFSCAmountInWei);
+      });
+    }
+  });
 
   it("should be able to be buyable with a TestERC20", async function () {
     const { nftInstance, scInstance, 
