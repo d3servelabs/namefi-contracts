@@ -198,31 +198,6 @@ contract NamefiServiceCredit is
     }
 
     /**
-     * @notice Gets the latest ETH/USD price from Chainlink oracle
-     * @return price The latest ETH/USD price with 8 decimals
-     */
-    function getEthUsdPrice() public view returns (uint256) {
-
-        if(address(_ethUsdPriceFeed) == address(0)){
-            return _price(address(0));
-        }
-        
-        (
-            ,
-            int256 answer,
-            ,
-            uint256 updatedAt,
-            
-        ) = _ethUsdPriceFeed.latestRoundData();
-        
-        // Ensure the price is not negative and the data is fresh
-        require(answer > 0, "Invalid price feed answer");
-        require(block.timestamp - updatedAt < 24 hours, "Price feed data too old");
-        
-        return uint256(answer) / 1e6; // Return in 6 decimals
-    }
-
-    /**
      * @dev Emitted when the ETH/USD price feed address is updated
      */
     event EthUsdPriceFeedUpdated(address indexed priceFeedAddress);
@@ -231,7 +206,7 @@ contract NamefiServiceCredit is
         // TODO buyableSupplyath?
         uint256 buyAmount =
             msg.value * 1e9  // gwei amount
-            / getEthUsdPrice(); // token wad
+            / _price(address(0)); // token wad
 
         if (_buyableSupply < buyAmount) {
             revert NamefiServiceCredit_InsufficientBuyableSupply(_buyableSupply, buyAmount);
@@ -263,6 +238,28 @@ contract NamefiServiceCredit is
 
     // Price of GWad of this Token (buyToken) per GWad of payToken
     function _price(address payToken) internal view returns (uint256) {
+
+        // Paying with ETH
+        if(payToken == address(0)){
+
+            require(address(_ethUsdPriceFeed) != address(0), "Price feed not initialized");
+        
+            (
+                ,
+                int256 answer,
+                ,
+                uint256 updatedAt,
+
+            ) = _ethUsdPriceFeed.latestRoundData();
+
+            // Ensure the price is not negative and the data is fresh
+            require(answer > 0, "Invalid price feed answer");
+            require(block.timestamp - updatedAt < 24 hours, "Price feed data too old");
+
+            return uint256(answer) / 1e6; // Return in 6 decimals
+        }
+
+
         uint256 payPrice = _priceMap[IERC20Upgradeable(payToken)];
         if (payPrice > 0) {
             return payPrice;

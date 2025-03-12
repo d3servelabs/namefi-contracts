@@ -20,15 +20,15 @@ describe("NamefiServiceCredit", function () {
 
   const CHAINLINK_ETH_USD_FEED = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419";
 
-  // deployFixture
-  async function deployFixture() {
-
-    // Fork mainnet
+  // Updated deployFixture to accept blockNumber parameter
+  async function deployFixture(blockNumber?: number) {
+    // Fork mainnet with optional block number
     await network.provider.request({
       method: "hardhat_reset",
       params: [{
         forking: {
           jsonRpcUrl: process.env.MAINNET_RPC_URL,
+          blockNumber // If undefined, will fork from latest block
         }
       }]
     });
@@ -115,12 +115,25 @@ describe("NamefiServiceCredit", function () {
       alice, bob, charlie };
   }
 
+  // Create named fixture functions for specific block numbers
+  async function deployFixtureLatest() {
+    return deployFixture();
+  }
+
+  async function deployFixtureBefore() {
+    return deployFixture(18535000);
+  }
+
+  async function deployFixtureAfter() {
+    return deployFixture(19250000);
+  }
+
   it("should be able mintBatch service credits", async function () {
     const { nftInstance, scInstance, 
       scDefaultAdmin, scMinter, scPauser,
       nftDefaultAdmin, nftMinter, 
       alice, bob, charlie 
-    } = await loadFixture(deployFixture);   
+    } = await loadFixture(deployFixtureLatest);
     await scInstance.connect(scDefaultAdmin).grantRole(MINTER_ROLE, scMinter.address);
     await scInstance.connect(scMinter).mintBatch(
       [alice.address, bob.address], 
@@ -152,7 +165,7 @@ describe("NamefiServiceCredit", function () {
       scDefaultAdmin, scMinter, scPauser,
       nftDefaultAdmin, nftMinter, 
       alice, bob, charlie 
-    } = await loadFixture(deployFixture);   
+    } = await loadFixture(deployFixtureLatest);   
         
         await scInstance.connect(scDefaultAdmin).grantRole(MINTER_ROLE, scMinter.address);
         await scInstance.connect(scMinter).mint(alice.address, ethers.utils.parseUnits("100", 18));
@@ -187,7 +200,7 @@ describe("NamefiServiceCredit", function () {
       scDefaultAdmin, scMinter, scPauser,
       nftDefaultAdmin, nftMinter, 
       alice, bob, charlie 
-    } = await loadFixture(deployFixture);   
+    } = await loadFixture(deployFixtureLatest);   
         
         await scInstance.connect(scDefaultAdmin).grantRole(MINTER_ROLE, scMinter.address);
         await scInstance.connect(scMinter).mint(alice.address, ethers.utils.parseUnits("100", 18));
@@ -234,7 +247,7 @@ describe("NamefiServiceCredit", function () {
       scDefaultAdmin, scMinter, scPauser,
       nftDefaultAdmin, nftMinter, 
       alice, bob, charlie 
-    } = await loadFixture(deployFixture);   
+    } = await loadFixture(deployFixtureLatest);   
         
         await scInstance.connect(scDefaultAdmin).grantRole(MINTER_ROLE, scMinter.address);
         await scInstance.connect(scMinter).mint(alice.address, ethers.utils.parseUnits("100", 18));
@@ -281,25 +294,31 @@ describe("NamefiServiceCredit", function () {
       scDefaultAdmin, scMinter, scPauser,
       nftDefaultAdmin, nftMinter, 
       alice, bob, charlie 
-    } = await loadFixture(deployFixture);   
-    await expect(scInstance.price(ethers.constants.AddressZero))
-      // .to.be.revertedWith("NamefiServiceCredit: unsupported payToken");
-      .to.be.revertedWithCustomError(scInstance, "NamefiServiceCredit_UnsupportedPayToken");
+    } = await loadFixture(deployFixtureLatest);   
 
-    await expect(scInstance.connect(alice).setPrice(
-      ethers.constants.AddressZero,
-      ethers.utils.parseUnits("2", 6)))
-      .to.be.revertedWith(/^AccessControl.*is missing role/);
-    let tx0 = await scInstance.connect(scMinter).setPrice(
-      ethers.constants.AddressZero,
-      ethers.utils.parseUnits("2", 6));
-    let rc0 = await tx0.wait();
-    let event0 = rc0.events?.find((e: any) => e.event === "SetPrice");
-    expect(event0).to.not.be.undefined;
-    expect(event0?.args?.payToken).to.equal(ethers.constants.AddressZero);
-    expect(event0?.args?.price).to.equal(ethers.utils.parseUnits("2", 6));
-    expect(await scInstance.price(ethers.constants.AddressZero))
-      .to.equal(ethers.utils.parseUnits("2", 6));
+    // await expect(scInstance.price(ethers.constants.AddressZero))
+    //   // .to.be.revertedWith("NamefiServiceCredit: unsupported payToken");
+    //   .to.be.revertedWithCustomError(scInstance, "NamefiServiceCredit_UnsupportedPayToken");
+
+    // await expect(scInstance.connect(alice).setPrice(
+    //   ethers.constants.AddressZero,
+    //   ethers.utils.parseUnits("2", 6)))
+    //   .to.be.revertedWith(/^AccessControl.*is missing role/);
+    // let tx0 = await scInstance.connect(scMinter).setPrice(
+    //   ethers.constants.AddressZero,
+    //   ethers.utils.parseUnits("2", 6));
+    // let rc0 = await tx0.wait();
+    // let event0 = rc0.events?.find((e: any) => e.event === "SetPrice");
+    // expect(event0).to.not.be.undefined;
+    // expect(event0?.args?.payToken).to.equal(ethers.constants.AddressZero);
+    // expect(event0?.args?.price).to.equal(ethers.utils.parseUnits("2", 6));
+    // expect(await scInstance.price(ethers.constants.AddressZero))
+    //   .to.equal(ethers.utils.parseUnits("2", 6));
+
+    // Compare chainlink price with contract price
+    const ethUsdFeed = await ethers.getContractAt("AggregatorV3Interface", CHAINLINK_ETH_USD_FEED);
+    const [, answer, , ,] = await ethUsdFeed.latestRoundData();
+    expect(await scInstance.price(ethers.constants.AddressZero)).to.equal(answer.div(1e6));
 
     expect(scInstance.connect(alice).buyWithEthers({value: ethers.utils.parseUnits("1", 18)}))
       // .to.be.revertedWith("NamefiServiceCredit: insufficient purchasble supply"); 
@@ -312,7 +331,7 @@ describe("NamefiServiceCredit", function () {
     expect(event?.args?.increaseBy).to.equal(ethers.utils.parseUnits("10000", 18));
     expect(await scInstance.connect(scMinter).buyableSupply()).to.equal(ethers.utils.parseUnits("10000", 18));
 
-    const ethUsdPrice = await scInstance.getEthUsdPrice();
+    const ethUsdPrice = await scInstance.price(ethers.constants.AddressZero);
 
     const expectedTokens = ethers.utils.parseUnits("0.5", 18).mul(1e9).div(ethUsdPrice);
 
@@ -334,7 +353,7 @@ describe("NamefiServiceCredit", function () {
       scDefaultAdmin, scMinter, scPauser,
       nftDefaultAdmin, nftMinter, 
       alice, bob, charlie 
-    } = await loadFixture(deployFixture);
+    } = await loadFixture(deployFixtureLatest);
     // deploy TestERC20
     const TestERC20 = await ethers.getContractFactory("TestERC20");
     const terc20 = await TestERC20.deploy();
@@ -390,5 +409,50 @@ describe("NamefiServiceCredit", function () {
     expect(ev2?.args?.payToken).to.equal(terc20.address);
     expect(ev2?.args?.payAmount).to.equal(ethers.utils.parseUnits("500", 18));
     expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("250", 18));
+  });
+
+  it("should give different token amounts based on ETH/USD price changes at different blocks", async function () {
+
+    const { scInstance, scMinter, scDefaultAdmin, alice } = await loadFixture(deployFixtureBefore);
+    
+    // Set Chainlink price feed and increase supply
+    await scInstance.connect(scDefaultAdmin).setEthUsdPriceFeed(CHAINLINK_ETH_USD_FEED);
+    await scInstance.connect(scMinter).increaseBuyableSupply(ethers.utils.parseEther("1000000"));
+    
+    // Buy with 1 ETH at first block's price
+    const ethAmount = ethers.utils.parseEther("1");
+    
+    await scInstance.connect(alice).buyWithEthers({ value: ethAmount });
+    
+    // Get price and tokens from first purchase
+    const price1 = await scInstance.price(ethers.constants.AddressZero);
+    console.log("ETH/USD Price before:", ethers.utils.formatUnits(price1, 2));
+    const balance1 = await scInstance.balanceOf(alice.address);
+    
+    // Second deployment at March block
+    const { scInstance: scInstance2, scMinter: scMinter2, scDefaultAdmin: scDefaultAdmin2, alice: alice2 } = await loadFixture(deployFixtureAfter);
+    
+    await scInstance2.connect(scDefaultAdmin2).setEthUsdPriceFeed(CHAINLINK_ETH_USD_FEED);
+    await scInstance2.connect(scMinter2).increaseBuyableSupply(ethers.utils.parseEther("1000000"));
+    
+    // Buy with same ETH amount at second block's price
+    await scInstance2.connect(alice2).buyWithEthers({ value: ethAmount });
+    
+    // Get price and tokens from second purchase
+    const price2 = await scInstance2.price(ethers.constants.AddressZero);
+    console.log("ETH/USD Price after:", ethers.utils.formatUnits(price2, 2));
+    const balance2 = await scInstance2.balanceOf(alice2.address);
+    
+    // Verify that higher ETH price results in fewer tokens
+    expect(price2).to.be.gt(price1, "ETH price should be higher in second block");
+    expect(balance2).to.be.lt(balance1, "Should receive fewer tokens at higher ETH price");
+    
+    // Calculate and verify the price ratio matches token ratio
+    const priceRatio = price2.mul(1000).div(price1);
+    const tokenRatio = balance1.mul(1000).div(balance2);
+    expect(priceRatio).to.equal(tokenRatio);
+    
+    console.log("Price ratio:", ethers.utils.formatUnits(priceRatio, 3));
+    console.log("Token ratio:", ethers.utils.formatUnits(tokenRatio, 3));
   });
 });
