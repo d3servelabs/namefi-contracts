@@ -66,6 +66,27 @@ error NamefiServiceCredit_InsufficientEthers();
 ]
 ```
 */
+
+// Chainlink Price Feed Interface
+interface AggregatorV3Interface {
+    function decimals() external view returns (uint8);
+    function description() external view returns (string memory);
+    function version() external view returns (uint256);
+    function getRoundData(uint80 _roundId) external view returns (
+        uint80 roundId,
+        int256 answer,
+        uint256 startedAt,
+        uint256 updatedAt,
+        uint80 answeredInRound
+    );
+    function latestRoundData() external view returns (
+        uint80 roundId,
+        int256 answer,
+        uint256 startedAt,
+        uint256 updatedAt,
+        uint80 answeredInRound
+    );
+}
 contract NamefiServiceCredit is 
         Initializable, 
         ERC20Upgradeable, 
@@ -79,6 +100,8 @@ contract NamefiServiceCredit is
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER");
     bytes32 public constant CHARGER_ROLE = keccak256("CHARGER");
+
+    AggregatorV3Interface private _ethUsdPriceFeed;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -165,6 +188,20 @@ contract NamefiServiceCredit is
         return keccak256("SUCCESS");
     }
 
+    /**
+     * @notice Sets the Chainlink price feed address
+     * @param priceFeedAddress The address of the ETH/USD price feed
+     */
+    function setEthUsdPriceFeed(address priceFeedAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _ethUsdPriceFeed = AggregatorV3Interface(priceFeedAddress);
+        emit EthUsdPriceFeedUpdated(priceFeedAddress);
+    }
+
+    /**
+     * @dev Emitted when the ETH/USD price feed address is updated
+     */
+    event EthUsdPriceFeedUpdated(address indexed priceFeedAddress);
+
     function buyWithEthers() payable public {
         // TODO buyableSupplyath?
         uint256 buyAmount =
@@ -201,6 +238,28 @@ contract NamefiServiceCredit is
 
     // Price of GWad of this Token (buyToken) per GWad of payToken
     function _price(address payToken) internal view returns (uint256) {
+
+        // Paying with ETH
+        if(payToken == address(0)){
+
+            require(address(_ethUsdPriceFeed) != address(0), "Price feed not initialized");
+        
+            (
+                ,
+                int256 answer,
+                ,
+                uint256 updatedAt,
+
+            ) = _ethUsdPriceFeed.latestRoundData();
+
+            // Ensure the price is not negative and the data is fresh
+            require(answer > 0, "Invalid price feed answer");
+            require(block.timestamp - updatedAt < 24 hours, "Price feed data too old");
+
+            return uint256(answer) / 1e6; // Return in 6 decimals
+        }
+
+
         uint256 payPrice = _priceMap[IERC20Upgradeable(payToken)];
         if (payPrice > 0) {
             return payPrice;
