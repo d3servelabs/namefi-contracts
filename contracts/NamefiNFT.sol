@@ -28,7 +28,7 @@ error NamefiNFT_ExtendTimeNotMultipleOf365Days();
 
 /** 
  * @custom:security-contact security@d3serve.xyz
- * @custom:version V1.2.0
+ * @custom:version V1.4.0-wip
  * The ABI of this interface in javascript array such as
 ```
 [
@@ -65,7 +65,7 @@ contract NamefiNFT is
     bytes32 public constant MINTER_ROLE = keccak256("MINTER");
     string public constant CONTRACT_NAME = "NamefiNFT";
     string public constant CONTRACT_SYMBOL = "NFNFT";
-    string public constant CURRENT_VERSION = "v1.2.0";
+    string public constant CURRENT_VERSION = "V1.4.0-wip";
     
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
