@@ -1,4 +1,4 @@
-import { HardhatUserConfig } from "hardhat/config";
+import type { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-gas-reporter"
 import * as dotenv from "dotenv";
@@ -6,6 +6,7 @@ import './tasks/deploy';
 import './tasks/nick-deploy';
 import './tasks/mgmt';
 import './tasks/get-tx';
+import './tasks/generate-abi';
 
 dotenv.config();
 
