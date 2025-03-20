@@ -17,7 +17,9 @@ import "./LockableNFT.sol";
 import "./IChargeableERC20.sol";
 import "./NamefiStruct.sol";
 
+// TODO: typo: should be NamefiNFT_DomainNameNotNormalized
 error NamefiNFT_DomainNameNotNomalized(string domainName);
+// TODO: typo: should be NamefiNFT_ExpirationDateTooEarly
 error NamefiNFT_EpxirationDateTooEarly(uint256 expirationTime, uint256 currentBlockTime);
 error NamefiNFT_ServiceCreditContractNotSet();
 error NamefiNFT_ServiceCreditFailToCharge();
