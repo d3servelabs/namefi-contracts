@@ -13,30 +13,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: recursive
       
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        
       - name: Set Node.js 22.x
         uses: actions/setup-node@v3
         with:
           node-version: 22.x
 
-      - name: Install Yarn
-        run: corepack enable && corepack prepare yarn@4.7.0 --activate
-
-      - name: Install Foundry
-        run: |
-          curl -L https://foundry.paradigm.xyz | bash
-          export PATH="$PATH:$HOME/.foundry/bin"
-          echo "$HOME/.foundry/bin" >> $GITHUB_PATH
-          foundryup
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
 
       - name: Run install
-        run: yarn install
+        run: bun install
 
       - name: Compile contracts
-        run: yarn compile
+        run: bun compile
 
       - name: Test hardhat only
-        run: yarn test:hardhat
+        run: bun test:hardhat
 
       - name: Test forge only
-        run: yarn test:forge
+        run: bun test:forge

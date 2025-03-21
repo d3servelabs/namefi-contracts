@@ -24,6 +24,7 @@ output/
 
 .infisical.json
 
-# Yarn v4
-.yarn/*
-.pnp.*
+# Bun
+bun.lockb
+
+# Remove Yarn entries

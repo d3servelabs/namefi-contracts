@@ -292,8 +292,6 @@ describe("NamefiNFT Minting", function () {
       const normalizedDomainName = "bob.eth";
       const expirationTime = (await ethers.provider.getBlock("latest")).timestamp + 365 * 24 * 60 * 60; // 1 year
       const chargeAmount = ethers.utils.parseUnits("20", 18);
-      
-      // Just check that it reverts, without specifying the exact error
       await expect(instance.connect(minter).safeMintByNameWithChargeAmount(
           bob.address,
           normalizedDomainName,
@@ -302,9 +300,24 @@ describe("NamefiNFT Minting", function () {
           chargeAmount,
           []
         )).to.be.revertedWithCustomError(
-          instance,
-          "NamefiServiceCredit_InsufficientCredit"  // Assuming this is the actual error name
+          scInstance,
+          "NamefiServiceCredit_InsufficientBalance"
         );
+      // Just check that it reverts, without specifying the exact error
+      // try {
+      //   await instance.connect(minter).safeMintByNameWithChargeAmount(
+      //     bob.address,
+      //     normalizedDomainName,
+      //     expirationTime,
+      //     alice.address,
+      //     chargeAmount,
+      //     []
+      //   );
+      // } catch (error) {
+      //   // show the rrror
+      //   console.log(`XXX -- ERROR`, error);
+      //   throw error;
+      // }
     });
 
     it("should mint token with DEPRECATED safeMintByNameWithCharge function", async function() {
@@ -330,8 +343,7 @@ describe("NamefiNFT Minting", function () {
         []
       );
       
-      // After minting - the contract uses a hardcoded amount of 20 tokens in the deprecated function
-      // See NamefiNFT.sol: function safeMintByNameWithCharge(...) where LEGACY_CHARGE_AMOUNT = 20e18
+      // After minting - 20 is hardcoded amount in the contract
       expect(await instance.ownerOf(ethers.utils.id(normalizedDomainName))).to.equal(bob.address);
       expect(await scInstance.balanceOf(alice.address)).to.equal(ethers.utils.parseUnits("80", 18)); // 100 - 20
     });

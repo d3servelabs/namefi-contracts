@@ -72,16 +72,16 @@ This project includes Foundry integration for detailed gas profiling of smart co
 
 ### Foundry Setup
 
-The Foundry installer is automatically downloaded when you run `yarn install`. To complete the setup:
+The Foundry installer is automatically downloaded when you run `bun install`. To complete the setup:
 
-1. After `yarn install` completes, run the following in a new terminal window:
+1. After `bun install` completes, run the following in a new terminal window:
    ```bash
    # Activate Foundry in your current shell
    source ~/.bashrc  # or ~/.zshrc depending on your shell
    # Complete Foundry installation
    foundryup
    # Set up Forge dependencies
-   yarn forge:setup
+   bun forge:setup
    ```
 
 The `lib/forge-std` directory is excluded from Git tracking via .gitignore.
@@ -90,13 +90,13 @@ The `lib/forge-std` directory is excluded from Git tracking via .gitignore.
 
 ```bash
 # Run all Foundry tests
-yarn forge:test
+bun forge:test
 
 # Run tests with gas reporting
-yarn forge:gas
+bun forge:gas
 
 # Create a gas snapshot for comparison
-yarn forge:snapshot
+bun forge:snapshot
 ```
 
 ### Gas Profiling in Solidity Tests
