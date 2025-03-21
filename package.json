@@ -8,7 +8,8 @@
     "compile": "hardhat compile",
     "coverage": "hardhat coverage",
     "clean": "hardhat clean",
-    "gen712": "eip712-codegen --input namefi-struct.js --entryPoints DnsUpdateRequest > contracts/gen/NamefiStruct.sol"
+    "gen712": "eip712-codegen --input namefi-struct.js --entryPoints DnsUpdateRequest > contracts/gen/NamefiStruct.sol",
+    "gen:abi": "yarn compile && npx hardhat generate-abi"
   },
   "author": "Zainan Victor Zhou et al with Team Namefi by D3ServeLabs",
   "license": "Apache-2.0+",

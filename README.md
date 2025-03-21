@@ -9,6 +9,18 @@ https://namefi.io
 ## Term
 - *NFT*: NonFungibleToken
 - *SC*: ServiceCredit
+
+## Development
+
+### Generating ABIs
+To generate ABI JSON files for all contracts, run:
+
+```bash
+yarn gen:abi
+```
+
+This will create ABI files in the `abis` directory.
+
 ## Deployments
 
 - NamefiProxyAdmin: `0x00000000009209F45C2822E3f11b7a73014130F1`
