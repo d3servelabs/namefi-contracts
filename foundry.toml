@@ -1,0 +1,25 @@
+[profile.default]
+src = 'contracts'
+out = 'forge-artifacts'
+libs = ["node_modules", "lib"]
+solc = '0.8.24'
+optimizer = true
+optimizer_runs = 200
+via_ir = false
+auto_download_sources = true
+
+[profile.ci]
+verbosity = 4
+
+[profile.gas]
+via_ir = true
+
+[rpc_endpoints]
+localhost = "${ANVIL_RPC_URL}"
+
+[etherscan]
+mainnet = { key = "${ETHERSCAN_API_KEY}" }
+goerli = { key = "${ETHERSCAN_API_KEY}" }
+sepolia = { key = "${ETHERSCAN_API_KEY}" }
+optimism = { key = "${OPTIMISM_ETHERSCAN_API_KEY}" }
+base = { key = "${BASE_ETHERSCAN_API_KEY}" } 

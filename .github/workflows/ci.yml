@@ -13,20 +13,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Set Node.js 18.x
+      - name: Set Node.js 22.x
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 22.x
+          cache: 'yarn'
+
+      - name: Install Yarn
+        run: npm install -g yarn
 
       - name: Run install
-        uses: borales/actions-yarn@v4
-        with:
-          cmd: install # will run `yarn install` command
+        run: yarn install
+
       - name: Compile contracts
-        uses: borales/actions-yarn@v4
-        with:
-          cmd: compile # will run `yarn compile` command
+        run: yarn compile
+
       - name: Test the app
-        uses: borales/actions-yarn@v4
-        with:
-          cmd: test # will run `yarn test` command
+        run: yarn test

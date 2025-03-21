@@ -65,3 +65,53 @@ reward for reporting bugs or security flaws.
 | Name       | Address |
 | ---------- | ------- |
 | Logic     | [0x9765eFf10c752DB8Ef81fe655cEB1543AbE7b16D](https://goerli.etherscan.io/address/0x9765eFf10c752DB8Ef81fe655cEB1543AbE7b16D#writeContract) |
+
+## Gas Profiling with Foundry
+
+This project includes Foundry integration for detailed gas profiling of smart contract functions. Foundry provides more comprehensive gas usage analysis compared to Hardhat, including internal function calls.
+
+### Foundry Setup
+
+The Foundry installer is automatically downloaded when you run `yarn install`. To complete the setup:
+
+1. After `yarn install` completes, run the following in a new terminal window:
+   ```bash
+   # Activate Foundry in your current shell
+   source ~/.bashrc  # or ~/.zshrc depending on your shell
+   # Complete Foundry installation
+   foundryup
+   # Set up Forge dependencies
+   yarn forge:setup
+   ```
+
+The `lib/forge-std` directory is excluded from Git tracking via .gitignore.
+
+### Running Gas Profiling Tests
+
+```bash
+# Run all Foundry tests
+yarn forge:test
+
+# Run tests with gas reporting
+yarn forge:gas
+
+# Create a gas snapshot for comparison
+yarn forge:snapshot
+```
+
+### Gas Profiling in Solidity Tests
+
+Gas profiling can be done at a granular level using the `gasleft()` function:
+
+```solidity
+// Example from test/foundry/NamefiNFT.t.sol
+function testFunction() public view {
+    uint256 gasStart = gasleft();
+    bool result = contract.someFunction();
+    uint256 gasUsed = gasStart - gasleft();
+    
+    console.log("Gas used: ", gasUsed);
+}
+```
+
+See `test/foundry/NamefiNFT.t.sol` for examples of gas profiling tests.
