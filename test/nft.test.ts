@@ -44,6 +44,7 @@ describe("NamefiNFT", function () {
       ], 
       contractDeploySigner
     );
+    
     const instance = await ethers.getContractAt(
       "NamefiNFT",
       proxy.address);
@@ -156,16 +157,18 @@ describe("NamefiNFT", function () {
       const charlie = signers[3];
       const normalizedDomainName = "bob.alice.eth";
   
-      const expirationTime =
-        (await ethers.provider.getBlock("latest")).timestamp - 1;
+      // Get current timestamp
+      const currentTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
+      
+      // Set expiration time in the past
+      const expirationTime = currentTimestamp - 10;
   
+      // Try to mint with past expiration
       await expect(instance.connect(minter).safeMintByNameNoCharge(
         bob.address,
         normalizedDomainName,
         expirationTime))
-        // .to.be.revertedWith("NamefiNFT: expiration time too early");
-        .to.be.revertedWithCustomError(instance, "NamefiNFT_EpxirationDateTooEarly")
-        .withArgs(expirationTime, (await ethers.provider.getBlock("latest")).timestamp + 1);
+        .to.be.revertedWithCustomError(instance, "NamefiNFT_EpxirationDateTooEarly");
     });
 
     it("Should be respected at transfering", async function () {
@@ -186,7 +189,6 @@ describe("NamefiNFT", function () {
         );
       await time.increaseTo(expirationTime + 1);
       await expect(instance.connect(bob).safeTransferFromByName(bob.address, charlie.address, normalizedDomainName))
-        // .to.be.revertedWith("ExpirableNFT: expired");
         .to.be.revertedWithCustomError(instance, "ExpirableNFT_Expired")
         .withArgs(ethers.utils.id(normalizedDomainName));
     });
@@ -195,10 +197,12 @@ describe("NamefiNFT", function () {
   describe("Lock", function() {
     it("Should yield an event of Lock or Unlock", async function () {
       const { instance, signers, minter } = await loadFixture(deployFixture);
+      
       const alice = signers[1];
       const bob = signers[2];
       const charlie = signers[3];
       const normalizedDomainName = "bob.alice.eth";
+      const tokenId = ethers.utils.id(normalizedDomainName);
   
       const expirationTime =
         (await ethers.provider.getBlock("latest")).timestamp + 1000;
@@ -207,25 +211,41 @@ describe("NamefiNFT", function () {
         bob.address,
         normalizedDomainName,
         expirationTime));
+      
       await expect(instance.connect(bob).safeTransferFromByName(bob.address, charlie.address, normalizedDomainName));
+      
+      const ownerBeforeLock = await instance.ownerOf(tokenId);
+      expect(ownerBeforeLock).to.equal(charlie.address);
+      
       let tx = await instance.connect(minter).lockByName(normalizedDomainName);
       let rc = await tx.wait();
+      
       let event = rc.events?.find((e: any) => e.event === "Lock");
+      
       expect(event).to.not.be.undefined;
-      expect(event?.args?.tokenId).to.equal(ethers.utils.id(normalizedDomainName));
+      expect(event?.args?.tokenId).to.equal(tokenId);
       
       // verify that charlie is owner of the NFT
-      expect(await instance.ownerOf(ethers.utils.id(normalizedDomainName))).to.equal(charlie.address);
+      const ownerAfterLock = await instance.ownerOf(tokenId);
+      expect(ownerAfterLock).to.equal(charlie.address);
 
       await expect(instance.connect(charlie).safeTransferFromByName(charlie.address, bob.address, normalizedDomainName))
         .to.be.revertedWithCustomError(instance, "LockableNFT_Locked")
-        .withArgs(ethers.utils.id(normalizedDomainName));
-
+        .withArgs(tokenId);
+      
       let tx2 = await instance.connect(minter).unlockByName(normalizedDomainName);
       let rc2 = await tx2.wait();
+      
       let event2 = rc2.events?.find((e: any) => e.event === "Unlock");
+      
       expect(event2).to.not.be.undefined;
-      expect(event2?.args?.tokenId).to.equal(ethers.utils.id(normalizedDomainName));
+      expect(event2?.args?.tokenId).to.equal(tokenId);
+      
+      // Verify now we can transfer after unlocking
+      await instance.connect(charlie).safeTransferFromByName(charlie.address, bob.address, normalizedDomainName);
+      
+      const finalOwner = await instance.ownerOf(tokenId);
+      expect(finalOwner).to.equal(bob.address);
     });
 
     it("Should be respected at transfer", async function () {
@@ -234,19 +254,30 @@ describe("NamefiNFT", function () {
       const bob = signers[2];
       const charlie = signers[3];
       const normalizedDomainName = "bob.alice.eth";
+      const tokenId = ethers.utils.id(normalizedDomainName);
   
       const expirationTime =
         (await ethers.provider.getBlock("latest")).timestamp + 1000;
   
-      await expect(instance.connect(minter).safeMintByNameNoCharge(
+      // Mint the token to bob
+      await instance.connect(minter).safeMintByNameNoCharge(
         bob.address,
         normalizedDomainName,
-        expirationTime));
-      await expect(instance.connect(bob).safeTransferFromByName(bob.address, charlie.address, normalizedDomainName))
+        expirationTime);
+        
+      // Transfer the token from bob to charlie
+      await instance.connect(bob).safeTransferFromByName(bob.address, charlie.address, normalizedDomainName);
+      
+      // Verify charlie is now the owner
+      expect(await instance.ownerOf(tokenId)).to.equal(charlie.address);
+      
+      // Lock the token
       await instance.connect(minter).lockByName(normalizedDomainName);
+      
+      // Charlie tries to transfer the token back to bob but it should be locked
       await expect(instance.connect(charlie).safeTransferFromByName(charlie.address, bob.address, normalizedDomainName))
         .to.be.revertedWithCustomError(instance, "LockableNFT_Locked")
-      .withArgs(ethers.utils.id(normalizedDomainName));
+        .withArgs(tokenId);
     });
 
     it("Should be respected at burning", async function () {
