@@ -1,12 +1,5 @@
 name: CI
 on: [push]
-# Environment variables
-env:
-  MNEMONIC: ${{ secrets.MNEMONIC }}
-  INFURA_API_KEY: ${{ vars.INFURA_API_KEY }}
-  COINMARKETCAP_API_KEY: ${{ vars.COINMARKETCAP_API_KEY }}
-  ALCHEMY_API_KEY: ${{ vars.ALCHEMY_API_KEY }}
-  ETHERSCAN_API_KEY: ${{ vars.ETHERSCAN_API_KEY }}
 jobs:
   build:
     name: Test
@@ -40,3 +33,7 @@ jobs:
 
       - name: Test forge only
         run: bun test:forge
+        
+      # New step for gas snapshot checking
+      - name: Check gas snapshots
+        run: forge snapshot --check

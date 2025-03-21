@@ -1,0 +1,8 @@
+NamefiNFTTest:testDomainLabelLengthGas() (gas: 150550)
+NamefiNFTTest:testEnsureLabelLengthGas() (gas: 40314)
+NamefiNFTTest:testEnsureLdhGas() (gas: 30390)
+NamefiNFTTest:testExposedIsNormalizedName() (gas: 80330)
+NamefiNFTTest:testMintGas() (gas: 121485)
+NamefiNFTTest:testMultipleLabelDomainGas() (gas: 114699)
+NamefiNFTTest:testNormalizedDomainNameCheck() (gas: 24877)
+NamefiNFTTest:testRealWorldDomains() (gas: 3162938)

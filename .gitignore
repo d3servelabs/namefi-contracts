@@ -13,7 +13,6 @@ artifacts
 forge-artifacts
 cache/solidity-files-cache.json
 cache/forge-*
-.gas-snapshot
 /broadcast
 /out
 /lib/forge-std

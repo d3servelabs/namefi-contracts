@@ -92,6 +92,47 @@ contract NamefiNFT is
         return _idToDomainNameMap[tokenId];
     }
 
+    // if domainName contains any letter other than lowercase letters, numbers, dash and ".", it is not normalized
+    function _ensureLdh(string memory domainName) internal pure returns (bool) {
+        for (uint i = 1; i < bytes(domainName).length - 2; i++) {
+            bytes1 char = bytes(domainName)[i];
+            if (
+                !(char >= 0x30 && char <= 0x39) // 0-9
+                && !(char >= 0x61 && char <= 0x7a)  // a-z
+                && char != 0x2e // "."
+                && char != 0x2d // "-"
+            ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function _ensureLabelLength(string memory domainName) internal pure returns (bool) {
+        // for each label, it must be 1-63 characters long
+        uint256 labelLength = 0;
+        for (uint i = 0; i < bytes(domainName).length; i++) {
+            bytes1 char = bytes(domainName)[i];
+            if (char == 0x2e) { // "."
+                // Check if previous label length is valid (1-63 chars)
+                if (labelLength == 0 || labelLength > 63) {
+                    return false;
+                }
+                // Reset counter for next label
+                labelLength = 0;
+            } else {
+                // Not a dot, increment the label length
+                labelLength++;
+            }
+        }
+        
+        // // Check the last label (after the last dot)
+        if (labelLength == 0 || labelLength > 63) {
+            return false;
+        }
+        return true;
+    }
+
     // if domainName contains any letter other than lowercase letters, numbers and ".", it is not normalized
     // in our normalized form it doens't end with "."
     // The following can be summarized as regex of /^[a-z0-9][a-z0-9\-\.]{1,253}\.$/
@@ -112,41 +153,14 @@ contract NamefiNFT is
             return false;
         }
 
-        // if domainName contains any letter other than lowercase letters, numbers, dash and ".", it is not normalized
-        for (uint i = 1; i < bytes(domainName).length - 2; i++) {
-            bytes1 char = bytes(domainName)[i];
-            if (
-                !(char >= 0x30 && char <= 0x39) // 0-9
-                && !(char >= 0x61 && char <= 0x7a)  // a-z
-                && char != 0x2e // "."
-                && char != 0x2d // "-"
-            ) {
-                return false;
-            }
-        }
-        
-        // for each label, it must be 1-63 characters long
-        uint256 labelLength = 0;
-        for (uint i = 0; i < bytes(domainName).length; i++) {
-            bytes1 char = bytes(domainName)[i];
-            if (char == 0x2e) { // "."
-                // Check if previous label length is valid (1-63 chars)
-                if (labelLength == 0 || labelLength > 63) {
-                    return false;
-                }
-                // Reset counter for next label
-                labelLength = 0;
-            } else {
-                // Not a dot, increment the label length
-                labelLength++;
-            }
-        }
-        
-        // Check the last label (after the last dot)
-        if (labelLength == 0 || labelLength > 63) {
+        // // if domainName contains any letter other than lowercase letters, numbers, dash and ".", it is not normalized
+        if (!_ensureLdh(domainName)) {
             return false;
         }
-
+        
+        if (!_ensureLabelLength(domainName)) {
+            return false;
+        }
         return true;
     }
     

@@ -18,6 +18,8 @@
     "forge:setup": "forge install --no-commit foundry-rs/forge-std",
     "forge:test": "forge test",
     "forge:gas": "forge test --gas-report -vv",
+    "forge:gas-snapshot": "forge snapshot",
+    "forge:gas-snapshot:check": "forge snapshot --check",
     "forge:snapshot": "forge snapshot",
     "ci": "act -j build --container-architecture linux/amd64 -v -P ubuntu-latest=node:22-bullseye --privileged"
   },
