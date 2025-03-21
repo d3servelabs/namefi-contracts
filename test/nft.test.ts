@@ -213,6 +213,9 @@ describe("NamefiNFT", function () {
       let event = rc.events?.find((e: any) => e.event === "Lock");
       expect(event).to.not.be.undefined;
       expect(event?.args?.tokenId).to.equal(ethers.utils.id(normalizedDomainName));
+      
+      // verify that charlie is owner of the NFT
+      expect(await instance.ownerOf(ethers.utils.id(normalizedDomainName))).to.equal(charlie.address);
 
       await expect(instance.connect(charlie).safeTransferFromByName(charlie.address, bob.address, normalizedDomainName))
         .to.be.revertedWithCustomError(instance, "LockableNFT_Locked")

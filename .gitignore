@@ -9,4 +9,17 @@ typechain-types
 cache
 artifacts
 
+# Foundry
+forge-artifacts
+cache/solidity-files-cache.json
+cache/forge-*
+.gas-snapshot
+/broadcast
+/out
+/lib/forge-std
+
 output/
+
+.env.*
+
+.infisical.json
