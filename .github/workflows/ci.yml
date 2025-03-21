@@ -13,14 +13,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      
       - name: Set Node.js 22.x
         uses: actions/setup-node@v3
         with:
           node-version: 22.x
-          cache: 'yarn'
 
       - name: Install Yarn
-        run: npm install -g yarn
+        run: corepack enable && corepack prepare yarn@4.7.0 --activate
+
+      - name: Install Foundry
+        run: |
+          curl -L https://foundry.paradigm.xyz | bash
+          export PATH="$PATH:$HOME/.foundry/bin"
+          echo "$HOME/.foundry/bin" >> $GITHUB_PATH
+          foundryup
 
       - name: Run install
         run: yarn install
@@ -28,5 +35,8 @@ jobs:
       - name: Compile contracts
         run: yarn compile
 
-      - name: Test the app
-        run: yarn test
+      - name: Test hardhat only
+        run: yarn test:hardhat
+
+      - name: Test forge only
+        run: yarn test:forge

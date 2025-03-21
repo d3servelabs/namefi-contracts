@@ -287,7 +287,7 @@ describe("NamefiServiceCredit", function () {
     expect(await scInstance.price(ethers.constants.AddressZero))
       .to.equal(ethers.utils.parseUnits("2", 6));
 
-    expect(scInstance.connect(alice).buyWithEthers({value: ethers.utils.parseUnits("1", 18)}))
+    await expect(scInstance.connect(alice).buyWithEthers({value: ethers.utils.parseUnits("1", 18)}))
       // .to.be.revertedWith("NamefiServiceCredit: insufficient purchasble supply"); 
       .to.be.revertedWithCustomError(scInstance, "NamefiServiceCredit_InsufficientBuyableSupply")
   
@@ -297,7 +297,6 @@ describe("NamefiServiceCredit", function () {
     expect(event).to.not.be.undefined;
     expect(event?.args?.increaseBy).to.equal(ethers.utils.parseUnits("1000", 18));
     expect(await scInstance.connect(scMinter).buyableSupply()).to.equal(ethers.utils.parseUnits("1000", 18));
-
     let tx2 = await scInstance.connect(alice).buyWithEthers({value: ethers.utils.parseUnits("0.5", 18)});
     // check that tx2 contains the event BuyToken
     rc = await tx2.wait();
@@ -361,7 +360,7 @@ describe("NamefiServiceCredit", function () {
       expect(await scInstance.price(ethers.constants.AddressZero))
         .to.equal(priceGWadOfNFSCPerGWadOfETH);
   
-      expect(scInstance.connect(alice).buyWithEthers({value: payingEthAmountInWei}))
+      await expect(scInstance.connect(alice).buyWithEthers({value: payingEthAmountInWei}))
         // .to.be.revertedWith("NamefiServiceCredit: insufficient purchasble supply"); 
         .to.be.revertedWithCustomError(scInstance, "NamefiServiceCredit_InsufficientBuyableSupply")
     
@@ -372,7 +371,6 @@ describe("NamefiServiceCredit", function () {
       expect(event).to.not.be.undefined;
       expect(event?.args?.increaseBy).to.equal(increaseSupplyAmountInGwei);
       expect(await scInstance.connect(scMinter).buyableSupply()).to.equal(increaseSupplyAmountInGwei);
-  
       // print out how much ETH we are using to buy and expected NFSC amount
       console.log(`Assuming current price: ${price}`);
       console.log(`Number of ETH used to buy: ${payingEthAmount}`);
@@ -385,7 +383,9 @@ describe("NamefiServiceCredit", function () {
       // There will be a small difference due to the precision of the floating point number.
       const allowedDifferenceRatio = 0.00001; // 1e-5
       const actualNFSCAmountInWei = event?.args?.buyAmount;
-      const actualDifferenceRatio = actualNFSCAmountInWei.sub(expectedNFSCAmountInWei).div(expectedNFSCAmountInWei).toNumber();
+      // Convert to absolute value by using abs() for the difference ratio check
+      const actualDifference = actualNFSCAmountInWei.sub(expectedNFSCAmountInWei).abs();
+      const actualDifferenceRatio = actualDifference.mul(100000).div(expectedNFSCAmountInWei).toNumber() / 100000;
       console.log(`Actual difference ratio: ${actualDifferenceRatio}`);
       expect(actualDifferenceRatio).to.be.lessThan(allowedDifferenceRatio);
 

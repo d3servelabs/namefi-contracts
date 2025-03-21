@@ -23,3 +23,7 @@ output/
 .env.*
 
 .infisical.json
+
+# Yarn v4
+.yarn/*
+.pnp.*

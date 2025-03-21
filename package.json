@@ -3,6 +3,7 @@
   "version": "1.4.0-wip",
   "description": "",
   "main": "index.js",
+  "packageManager": "yarn@4.7.0",
   "scripts": {
     "test": "yarn test:hardhat && yarn test:forge",
     "test:hardhat": "hardhat test",
@@ -18,7 +19,7 @@
     "forge:test": "forge test",
     "forge:gas": "forge test --gas-report -vv",
     "forge:snapshot": "forge snapshot",
-    "ci": "act -j build --container-architecture linux/amd64 -v"
+    "ci": "act -j build --container-architecture linux/amd64 -v -P ubuntu-latest=node:22-bullseye --privileged"
   },
   "author": "Zainan Victor Zhou et al with Team Namefi by D3ServeLabs",
   "license": "Apache-2.0+",
@@ -43,7 +44,7 @@
     "chai": "^4.3.6",
     "dotenv": "^16.3.1",
     "ethers": "^5.7.1",
-    "hardhat": "^2.11.2",
+    "hardhat": "^2.22.19",
     "hardhat-depver": "^0.0.4",
     "hardhat-gas-reporter": "^1.0.9",
     "solidity-coverage": "^0.8.2",
