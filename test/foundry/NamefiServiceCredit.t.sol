@@ -3,8 +3,8 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../contracts/NamefiServiceCredit.sol";
-import "../contracts/NamefiNFT.sol";
+import "../../contracts/NamefiServiceCredit.sol";
+import "../../contracts/NamefiNFT.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";

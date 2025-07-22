@@ -246,14 +246,33 @@ contract NamefiNFT is
         _safeMintByName(to, domainName, expirationTime);
     }
 
+    /**
+     * @notice Burns a token by its domain name
+     * @dev The token must be locked before it can be burned.
+     * Unlike the ERC721 burn operation, this function preserves the domain name mapping
+     * so that idToNormalizedDomainName still returns the original domain name after burning.
+     * This allows for historical record keeping and prevents domain name data loss.
+     * @param domainName The domain name of the token to burn
+     */
     function burnByName(string memory domainName) public 
         onlyRole(MINTER_ROLE)
         whenLocked(normalizedDomainNameToId(domainName), bytes("")) {
         uint256 tokenId = normalizedDomainNameToId(domainName);
-        _idToDomainNameMap[tokenId] = "";
+        // Domain name mapping is intentionally preserved for historical reference
+        // Removing the next line to preserve the mapping
+        // _idToDomainNameMap[tokenId] = "";
         _burn(tokenId);
     }
 
+    /**
+     * @notice Transfer a token using domain name instead of token ID
+     * @dev This function converts a domain name to a token ID and then performs a transfer
+     * The function will succeed if the token is not expired at the time of the call.
+     * There is no check to prevent transfers of tokens that are about to expire.
+     * @param from Current owner of the token
+     * @param to Address to receive the token
+     * @param domainName The domain name of the token to transfer
+     */
     function safeTransferFromByName(address from, address to, string memory domainName) public {
         uint256 tokenId = normalizedDomainNameToId(domainName);
         if (!_isApprovedOrOwner(_msgSender(), tokenId)) {
@@ -286,7 +305,29 @@ contract NamefiNFT is
         return string(abi.encodePacked(_baseURI(), _idToDomainNameMap[tokenId]));
     }
 
+    /**
+     * @notice Set the expiration time for a token
+     * @dev This function allows setting any expiration time, including past timestamps
+     * which will immediately expire the token. This is an intentional design choice
+     * to allow administrative control over token expiration.
+     * Only accounts with MINTER_ROLE can call this function, not token owners.
+     * No batch operations are supported to keep the contract simple.
+     * @param tokenId The ID of the token to set expiration for
+     * @param expirationTime The new expiration timestamp (can be in the past)
+     */
     function setExpiration(uint256 tokenId, uint256 expirationTime) public override onlyRole(MINTER_ROLE) {
+        _setExpiration(tokenId, expirationTime);
+    }
+
+    /**
+     * @notice Set expiration by domain name instead of token ID
+     * @dev Maps the domain name to a token ID and then sets the expiration
+     * Same restrictions apply as setExpiration()
+     * @param domainName The domain name of the token
+     * @param expirationTime The new expiration timestamp
+     */
+    function setExpirationByName(string memory domainName, uint256 expirationTime) external onlyRole(MINTER_ROLE) {
+        uint256 tokenId = normalizedDomainNameToId(domainName);
         _setExpiration(tokenId, expirationTime);
     }
 
@@ -310,19 +351,31 @@ contract NamefiNFT is
          _setExpiration(tokenId, _getExpiration(tokenId) + timeToExtend);
     }
 
+    /**
+     * @notice Extend the expiration of a token by domain name with specified charge amount
+     * @dev This function adds the specified duration to the current expiration time
+     * The function intentionally accepts any duration value without normalization.
+     * Only accounts with MINTER_ROLE can call this function, not token owners.
+     * There is no emergency override mechanism for expired tokens.
+     * @param domainName The domain name of the token to extend
+     * @param timeToExtend The duration to add to the current expiration time (in seconds)
+     * @param chargee The account to charge for the extension
+     * @param chargeAmount The amount of tokens to charge
+     * @param extraData Additional data for the transaction
+     */
     function extendByNameWithChargeAmount(
-            string memory domainName, 
-            uint256 timeToExtend, // Same unit with expirationTime new expiration time shall be expirationTime + timeToExtend
-            address chargee,
-            uint256 chargeAmount,
-            bytes memory /* extraEata */) external virtual onlyRole(MINTER_ROLE) {
-        uint256 tokenId = normalizedDomainNameToId(domainName);        
+        string memory domainName,
+        uint256 timeToExtend, // Same unit with expirationTime new expiration time shall be expirationTime + timeToExtend
+        address chargee,
+        uint256 chargeAmount,
+        bytes memory extraData) external virtual onlyRole(MINTER_ROLE) {
+        uint256 tokenId = normalizedDomainNameToId(domainName);
         _ensureChargeServiceCredit(
             chargee, 
-            chargeAmount,
+            chargeAmount, 
             string(abi.encodePacked("NamefiNFT: mint ", domainName)),
             bytes(""));
-         _setExpiration(tokenId, _getExpiration(tokenId) + timeToExtend);
+        _setExpiration(tokenId, _getExpiration(tokenId) + timeToExtend);
     }
 
     function lock(uint256 tokenId, bytes calldata extra) external payable override onlyRole(MINTER_ROLE) {

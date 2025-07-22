@@ -12,6 +12,9 @@ error ExpirableNFT_Expired(uint256 tokenId);
 abstract contract ExpirableNFT {
     mapping(uint256 id => uint256) private _expirations;
     
+    // Event emitted when token expiration is changed
+    event ExpirationChanged(uint256 indexed tokenId, uint256 newExpirationTime);
+    
     function _getExpiration(uint256 tokenId) internal view returns (uint256) {
         return _expirations[tokenId];
     }
@@ -20,12 +23,19 @@ abstract contract ExpirableNFT {
         return _getExpiration(tokenId);
     }
     
+    /**
+     * @notice Check if a token is expired
+     * @dev Returns false for non-existent tokens as well as valid tokens
+     * @param tokenId The token to check
+     * @return True if the token exists and is expired, false otherwise
+     */
     function isExpired(uint256 tokenId) public view returns (bool) {
         return _isExpired(tokenId);
     }
 
     function _setExpiration(uint256 tokenId, uint256 expirationTime) internal {
         _expirations[tokenId] = expirationTime;
+        emit ExpirationChanged(tokenId, expirationTime);
     }
 
     function _isExpired(uint256 tokenId) internal view returns (bool) {
