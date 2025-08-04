@@ -346,7 +346,7 @@ contract NamefiNFT is
             chargee, 
             // For simplecity we are using a per-year model.
             20e18 * (yearToExtend),
-            string(abi.encodePacked("NamefiNFT: mint ", domainName)),
+            string(abi.encodePacked("NamefiNFT: extend ", domainName)),
             bytes(""));
          _setExpiration(tokenId, _getExpiration(tokenId) + timeToExtend);
     }
@@ -373,7 +373,7 @@ contract NamefiNFT is
         _ensureChargeServiceCredit(
             chargee, 
             chargeAmount, 
-            string(abi.encodePacked("NamefiNFT: mint ", domainName)),
+            string(abi.encodePacked("NamefiNFT: extend ", domainName)),
             bytes(""));
         _setExpiration(tokenId, _getExpiration(tokenId) + timeToExtend);
     }
