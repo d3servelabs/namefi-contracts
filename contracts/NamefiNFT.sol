@@ -74,12 +74,21 @@ contract NamefiNFT is
         _disableInitializers();
     }
 
-    // This is a URI for the contract itself. It is not a tokenURI.
-    // It follows https://docs.opensea.io/docs/contract-level-metadata
+    /**
+     * @notice Get contract-level metadata URI
+     * @dev This is a URI for the contract itself, not a tokenURI
+     * @dev Follows OpenSea contract-level metadata standard
+     * @return The contract metadata URI
+     */
     function contractURI() public pure returns (string memory) {
         return "https://md.namefi.io/namefi-nft.json";
     }
 
+    /**
+     * @notice Initialize the contract (proxy pattern)
+     * @dev Can only be called once due to initializer modifier
+     * @dev Sets up ERC721 and AccessControl, grants initial roles to deployer
+     */
     function initialize() initializer public {
         __ERC721_init(CONTRACT_NAME, CONTRACT_SYMBOL);
         __AccessControl_init();
@@ -88,6 +97,12 @@ contract NamefiNFT is
         _baseUriStr = "https://md.namefi.io/";
     }
 
+    /**
+     * @notice Get the domain name associated with a token ID
+     * @dev Returns empty string if token doesn't exist or has no domain name mapped
+     * @param tokenId The token ID to query
+     * @return The normalized domain name associated with the token
+     */
     function idToNormalizedDomainName(uint256 tokenId) public view returns (string memory) {
         return _idToDomainNameMap[tokenId];
     }
@@ -133,10 +148,18 @@ contract NamefiNFT is
         return true;
     }
 
-    // if domainName contains any letter other than lowercase letters, numbers and ".", it is not normalized
-    // in our normalized form it doens't end with "."
-    // The following can be summarized as regex of /^[a-z0-9][a-z0-9\-\.]{1,253}\.$/
-    // https://regex101.com/r/Sn1S3J/1
+    /**
+     * @notice Check if a domain name is in normalized form
+     * @dev A normalized domain name follows these rules:
+     * - Length between 3-255 characters  
+     * - Contains only lowercase letters (a-z), numbers (0-9), dots (.), and hyphens (-)
+     * - Starts with a lowercase letter or number
+     * - Does NOT end with a dot
+     * - Each label (part between dots) is 1-63 characters long
+     * - Follows regex pattern: /^[a-z0-9][a-z0-9\-\.]{1,253}$/
+     * @param domainName The domain name to validate
+     * @return True if the domain name is normalized, false otherwise
+     */
     function isNormalizedName(string memory domainName) public pure returns (bool) {
         if (bytes(domainName).length < 3 || bytes(domainName).length > 255) {
             return false;
@@ -165,6 +188,13 @@ contract NamefiNFT is
     }
     
 
+    /**
+     * @notice Convert a normalized domain name to its corresponding token ID
+     * @dev Uses keccak256 hash of the domain name as the token ID
+     * @dev This creates a deterministic mapping from domain names to token IDs
+     * @param domainName The normalized domain name to convert
+     * @return The token ID corresponding to the domain name
+     */
     function normalizedDomainNameToId(string memory domainName) public pure returns (uint256) {
         return uint256(keccak256(abi.encodePacked(domainName)));
     }
@@ -184,6 +214,14 @@ contract NamefiNFT is
         _safeMint(to, tokenId);
     }
 
+    /**
+     * @notice Mint a domain name NFT without charging service credits
+     * @dev Only accounts with MINTER_ROLE can mint tokens
+     * @dev The domain name must be normalized and not already exist
+     * @param to The address to receive the newly minted token
+     * @param domainName The normalized domain name for the token
+     * @param expirationTime The expiration timestamp for the token
+     */
     function safeMintByNameNoCharge(
         address to, 
         string memory domainName,
@@ -214,7 +252,16 @@ contract NamefiNFT is
         }
     }
 
-    // DEPRECATED. TODO: remove after migration.
+    /**
+     * @notice Mint a domain name NFT with a fixed service credit charge
+     * @dev DEPRECATED: Use safeMintByNameWithChargeAmount instead
+     * @dev Charges a hardcoded 20 service credits from the chargee
+     * @dev Only accounts with MINTER_ROLE can mint tokens
+     * @param to The address to receive the newly minted token
+     * @param domainName The normalized domain name for the token
+     * @param expirationTime The expiration timestamp for the token
+     * @param chargee The address to charge service credits from
+     */
     function safeMintByNameWithCharge(
         address to,
         string memory domainName,
@@ -230,6 +277,16 @@ contract NamefiNFT is
         _safeMintByName(to, domainName, expirationTime);
     }
 
+    /**
+     * @notice Mint a domain name NFT with a specified service credit charge
+     * @dev Only accounts with MINTER_ROLE can mint tokens
+     * @dev Charges the specified amount of service credits from the chargee
+     * @param to The address to receive the newly minted token
+     * @param domainName The normalized domain name for the token
+     * @param expirationTime The expiration timestamp for the token
+     * @param chargee The address to charge service credits from
+     * @param chargeAmount The amount of service credits to charge
+     */
     function safeMintByNameWithChargeAmount(
         address to,
         string memory domainName,
@@ -289,15 +346,31 @@ contract NamefiNFT is
         super._transfer(from, to, tokenId);
     }
 
-    // URI
+    /**
+     * @dev Internal function to get the base URI for token metadata
+     * @return The base URI string
+     */
     function _baseURI() internal view override returns (string memory) {
         return _baseUriStr;
     }
 
+    /**
+     * @notice Set the base URI for token metadata
+     * @dev Only accounts with DEFAULT_ADMIN_ROLE can update the base URI
+     * @dev The token URI will be: baseURI + domainName
+     * @param baseUriStr The new base URI string
+     */
     function setBaseURI(string memory baseUriStr) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _baseUriStr = baseUriStr;
     }
 
+    /**
+     * @notice Get the metadata URI for a token
+     * @dev Combines the base URI with the token's domain name
+     * @param tokenId The token ID to get the URI for
+     * @return The complete metadata URI for the token
+     * @dev Reverts if the token doesn't exist
+     */
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         if (!_exists(tokenId)) {
             revert NamefiNFT_URIQueryForNonexistentToken();
@@ -378,18 +451,45 @@ contract NamefiNFT is
         _setExpiration(tokenId, _getExpiration(tokenId) + timeToExtend);
     }
 
+    /**
+     * @notice Lock a token by its ID
+     * @dev Locked tokens cannot be transferred until unlocked
+     * @dev Only accounts with MINTER_ROLE can lock tokens
+     * @param tokenId The ID of the token to lock
+     * @param extra Additional data for the lock operation
+     */
     function lock(uint256 tokenId, bytes calldata extra) external payable override onlyRole(MINTER_ROLE) {
         _lock(tokenId, extra);
     }
+
+    /**
+     * @notice Lock a token by its domain name
+     * @dev Convenience function that converts domain name to token ID and locks it
+     * @dev Only accounts with MINTER_ROLE can lock tokens
+     * @param domainName The domain name of the token to lock
+     */
     function lockByName(string memory domainName) external onlyRole(MINTER_ROLE) {
         uint256 tokenId = normalizedDomainNameToId(domainName);
         _lock(tokenId, bytes(""));
     }
 
+    /**
+     * @notice Unlock a token by its ID
+     * @dev Unlocked tokens can be transferred normally
+     * @dev Only accounts with MINTER_ROLE can unlock tokens
+     * @param tokenId The ID of the token to unlock
+     * @param extra Additional data for the unlock operation
+     */
     function unlock(uint256 tokenId, bytes calldata extra) external payable override onlyRole(MINTER_ROLE) {
         _unlock(tokenId, extra);
     }
 
+    /**
+     * @notice Unlock a token by its domain name
+     * @dev Convenience function that converts domain name to token ID and unlocks it
+     * @dev Only accounts with MINTER_ROLE can unlock tokens
+     * @param domainName The domain name of the token to unlock
+     */
     function unlockByName(string memory domainName) external onlyRole(MINTER_ROLE) {
         uint256 tokenId = normalizedDomainNameToId(domainName);
         _unlock(tokenId, bytes(""));
@@ -405,6 +505,12 @@ contract NamefiNFT is
             || interfaceId == type(IERC5267Upgradeable).interfaceId;
     }
 
+    /**
+     * @notice Set the service credit contract address
+     * @dev This contract is used for charging service credits during domain operations
+     * @dev Only accounts with DEFAULT_ADMIN_ROLE can update this address
+     * @param addr The address of the service credit contract
+     */
     function setServiceCreditContract(address addr) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _NamefiServiceCreditContract = IChargeableERC20(addr);
     }
