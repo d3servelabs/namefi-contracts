@@ -92,6 +92,29 @@ contract NamefiNFT is
         return _idToDomainNameMap[tokenId];
     }
 
+    // Check if the first character is valid (lowercase letter or number)
+    function _ensureValidFirstChar(string memory domainName) internal pure returns (bool) {
+        if (bytes(domainName).length == 0) {
+            return false;
+        }
+        bytes1 firstChar = bytes(domainName)[0];
+        // First char must be lowercase letter (a-z) or number (0-9)
+        return firstChar >= 0x30 && firstChar <= 0x39 // 0-9
+            || firstChar >= 0x61 && firstChar <= 0x7a; // a-z
+    }
+
+    // Check if the last character is valid (lowercase letter or number, not dot or dash)
+    function _ensureValidLastChar(string memory domainName) internal pure returns (bool) {
+        if (bytes(domainName).length == 0) {
+            return false;
+        }
+        bytes1 lastChar = bytes(domainName)[bytes(domainName).length - 1];
+        // Last char must be lowercase letter (a-z) or number (0-9)
+        // Cannot be dot (.) or dash (-) per ICANN rules
+        return lastChar >= 0x30 && lastChar <= 0x39 // 0-9
+            || lastChar >= 0x61 && lastChar <= 0x7a; // a-z
+    }
+
     // if domainName contains any letter other than lowercase letters, numbers, dash and ".", it is not normalized
     function _ensureLdh(string memory domainName) internal pure returns (bool) {
         for (uint i = 1; i < bytes(domainName).length - 2; i++) {
@@ -147,13 +170,18 @@ contract NamefiNFT is
             return false;
         }
 
-        // A nomralized domain name must start with lower case letter or number
-        bytes1 firstChar = bytes(domainName)[0];
-        if (firstChar < 0x30 || (firstChar > 0x39 && firstChar < 0x61) || firstChar > 0x7a) {
+        // A normalized domain name must start with lower case letter or number
+        if (!_ensureValidFirstChar(domainName)) {
             return false;
         }
 
-        // // if domainName contains any letter other than lowercase letters, numbers, dash and ".", it is not normalized
+        // Enable for ICANN compliance - this would be a breaking change
+        // A normalized domain name must end with lower case letter or number (not dash or special chars)
+        if (!_ensureValidLastChar(domainName)) {
+            return false;
+        }
+
+        // if domainName contains any letter other than lowercase letters, numbers, dash and ".", it is not normalized
         if (!_ensureLdh(domainName)) {
             return false;
         }
@@ -346,7 +374,7 @@ contract NamefiNFT is
             chargee, 
             // For simplecity we are using a per-year model.
             20e18 * (yearToExtend),
-            string(abi.encodePacked("NamefiNFT: mint ", domainName)),
+            string(abi.encodePacked("NamefiNFT: extend ", domainName)),
             bytes(""));
          _setExpiration(tokenId, _getExpiration(tokenId) + timeToExtend);
     }
@@ -373,7 +401,7 @@ contract NamefiNFT is
         _ensureChargeServiceCredit(
             chargee, 
             chargeAmount, 
-            string(abi.encodePacked("NamefiNFT: mint ", domainName)),
+            string(abi.encodePacked("NamefiNFT: extend ", domainName)),
             bytes(""));
         _setExpiration(tokenId, _getExpiration(tokenId) + timeToExtend);
     }

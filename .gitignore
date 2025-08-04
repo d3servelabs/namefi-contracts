@@ -27,3 +27,4 @@ output/
 bun.lockb
 
 # Remove Yarn entries
+.claude/settings.local.json

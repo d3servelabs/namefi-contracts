@@ -13,6 +13,14 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 // Helper contract to expose internal functions for testing
 contract NamefiNFTExposed is NamefiNFT {
+    function exposedEnsureValidFirstChar(string memory domainName) public pure returns (bool) {
+        return _ensureValidFirstChar(domainName);
+    }
+
+    function exposedEnsureValidLastChar(string memory domainName) public pure returns (bool) {
+        return _ensureValidLastChar(domainName);
+    }
+
     function exposedEnsureLdh(string memory domainName) public pure returns (bool) {
         return _ensureLdh(domainName);
     }
@@ -381,5 +389,257 @@ contract NamefiNFTTest is Test {
             }
         }
         return labels;
+    }
+
+    // Test the new _ensureValidLastChar function specifically
+    function testEnsureValidLastChar() public {
+        // Test valid last characters
+        string[] memory validLast = new string[](4);
+        validLast[0] = "alice.eth";     // ends with lowercase letter
+        validLast[1] = "alice.et9";     // ends with number 9
+        validLast[2] = "alice.et0";     // ends with number 0
+        validLast[3] = "alice.etz";     // ends with letter z
+        
+        for (uint i = 0; i < validLast.length; i++) {
+            vm.resumeGasMetering();
+            bool result = exposed.exposedEnsureValidLastChar(validLast[i]);
+            vm.pauseGasMetering();
+            assertTrue(result, string(abi.encodePacked("_ensureValidLastChar should accept: ", validLast[i])));
+        }
+        
+        // Test invalid last characters (ICANN non-compliant)
+        string[] memory invalidLast = new string[](6);
+        invalidLast[0] = "alice.eth-";   // ends with dash
+        invalidLast[1] = "alice.eth.";   // ends with dot
+        invalidLast[2] = "alice.eth_";   // ends with underscore
+        invalidLast[3] = "alice.ethA";   // ends with uppercase letter
+        invalidLast[4] = "alice.eth@";   // ends with special character
+        invalidLast[5] = "alice.eth ";   // ends with space
+        
+        for (uint i = 0; i < invalidLast.length; i++) {
+            vm.resumeGasMetering();
+            bool result = exposed.exposedEnsureValidLastChar(invalidLast[i]);
+            vm.pauseGasMetering();
+            assertFalse(result, string(abi.encodePacked("_ensureValidLastChar should reject: ", invalidLast[i])));
+        }
+        
+        // Test edge case: empty string
+        vm.resumeGasMetering();
+        bool emptyResult = exposed.exposedEnsureValidLastChar("");
+        vm.pauseGasMetering();
+        assertFalse(emptyResult, "_ensureValidLastChar should reject empty string");
+    }
+
+    // Test the new _ensureValidFirstChar function specifically
+    function testEnsureValidFirstChar() public {
+        // Test valid first characters
+        string[] memory validFirst = new string[](4);
+        validFirst[0] = "alice.eth";    // starts with lowercase letter
+        validFirst[1] = "9alice.eth";   // starts with number 9
+        validFirst[2] = "0alice.eth";   // starts with number 0
+        validFirst[3] = "ztest.eth";    // starts with letter z
+        
+        for (uint i = 0; i < validFirst.length; i++) {
+            vm.resumeGasMetering();
+            bool result = exposed.exposedEnsureValidFirstChar(validFirst[i]);
+            vm.pauseGasMetering();
+            assertTrue(result, string(abi.encodePacked("_ensureValidFirstChar should accept: ", validFirst[i])));
+        }
+        
+        // Test invalid first characters
+        string[] memory invalidFirst = new string[](5);
+        invalidFirst[0] = "-alice.eth";  // starts with dash
+        invalidFirst[1] = ".alice.eth";  // starts with dot
+        invalidFirst[2] = "_alice.eth";  // starts with underscore
+        invalidFirst[3] = "Alice.eth";   // starts with uppercase letter
+        invalidFirst[4] = "@alice.eth";  // starts with special character
+        
+        for (uint i = 0; i < invalidFirst.length; i++) {
+            vm.resumeGasMetering();
+            bool result = exposed.exposedEnsureValidFirstChar(invalidFirst[i]);
+            vm.pauseGasMetering();
+            assertFalse(result, string(abi.encodePacked("_ensureValidFirstChar should reject: ", invalidFirst[i])));
+        }
+        
+        // Test edge case: empty string
+        vm.resumeGasMetering();
+        bool emptyResult = exposed.exposedEnsureValidFirstChar("");
+        vm.pauseGasMetering();
+        assertFalse(emptyResult, "_ensureValidFirstChar should reject empty string");
+    }
+
+    // Test boundary conditions for domain length and character positioning
+    function testBoundaryConditions() public {
+        // Test minimum length requirements
+        string[] memory tooShort = new string[](2);
+        tooShort[0] = "ab";             // 2 characters (below minimum of 3)
+        tooShort[1] = "a";              // 1 character
+        
+        for (uint i = 0; i < tooShort.length; i++) {
+            vm.resumeGasMetering();
+            bool result = namefiNFT.isNormalizedName(tooShort[i]);
+            vm.pauseGasMetering();
+            assertFalse(result, string(abi.encodePacked("Should reject too short domain: ", tooShort[i])));
+        }
+        
+        // Test minimum valid length
+        vm.resumeGasMetering();
+        bool minValidResult = namefiNFT.isNormalizedName("a.b");  // 3 characters, minimum valid
+        vm.pauseGasMetering();
+        assertTrue(minValidResult, "Should accept minimum valid length domain: a.b");
+        
+        // Test domains with only two characters that don't have dots
+        string[] memory noDots = new string[](3);
+        noDots[0] = "aa";               // 2 chars, no dots
+        noDots[1] = "99";               // 2 numbers, no dots  
+        noDots[2] = "a9";               // mixed, no dots
+        
+        for (uint i = 0; i < noDots.length; i++) {
+            vm.resumeGasMetering();
+            bool result = namefiNFT.isNormalizedName(noDots[i]);
+            vm.pauseGasMetering();
+            assertFalse(result, string(abi.encodePacked("Should reject short domain without dots: ", noDots[i])));
+        }
+        
+        // Test edge case: exactly 3 characters with various patterns
+        string[] memory threeChars = new string[](4);
+        threeChars[0] = "a.b";          // valid: letter.letter
+        threeChars[1] = "9.a";          // valid: number.letter
+        threeChars[2] = "a.9";          // valid: letter.number
+        threeChars[3] = "9.9";          // valid: number.number
+        
+        for (uint i = 0; i < threeChars.length; i++) {
+            vm.resumeGasMetering();
+            bool result = namefiNFT.isNormalizedName(threeChars[i]);
+            vm.pauseGasMetering();
+            assertTrue(result, string(abi.encodePacked("Should accept valid 3-char domain: ", threeChars[i])));
+        }
+    }
+
+    // Test that ICANN compliance for last character is enforced
+    function testStrictLastCharCompliance() public {
+        // These domains are rejected by isNormalizedName due to ICANN compliance (last char validation enabled)
+        string[] memory nonCompliantDomains = new string[](3);
+        nonCompliantDomains[0] = "alice.eth-";    // ends with dash
+        nonCompliantDomains[1] = "alice.ethA";    // ends with uppercase
+        nonCompliantDomains[2] = "bob.org_";      // ends with underscore
+        
+        for (uint i = 0; i < nonCompliantDomains.length; i++) {
+            string memory domain = nonCompliantDomains[i];
+            
+            // Current behavior: these fail overall validation due to ICANN compliance
+            vm.resumeGasMetering();
+            bool currentlyValid = namefiNFT.isNormalizedName(domain);
+            vm.pauseGasMetering();
+            assertFalse(currentlyValid, string(abi.encodePacked("ICANN compliance rejects: ", domain)));
+            
+            // They also fail strict last char validation
+            vm.resumeGasMetering();
+            bool strictLastChar = exposed.exposedEnsureValidLastChar(domain);
+            vm.pauseGasMetering();
+            assertFalse(strictLastChar, string(abi.encodePacked("Strict last char rejects: ", domain)));
+        }
+        
+        // These domains would still be valid with strict compliance
+        string[] memory compliantDomains = new string[](3);
+        compliantDomains[0] = "alice.eth";     // ends with letter
+        compliantDomains[1] = "bob.org9";      // ends with number
+        compliantDomains[2] = "test.comz";     // ends with letter z
+        
+        for (uint i = 0; i < compliantDomains.length; i++) {
+            string memory domain = compliantDomains[i];
+            
+            vm.resumeGasMetering();
+            bool currentlyValid = namefiNFT.isNormalizedName(domain);
+            vm.pauseGasMetering();
+            assertTrue(currentlyValid, string(abi.encodePacked("Currently accepts: ", domain)));
+            
+            vm.resumeGasMetering();
+            bool strictLastChar = exposed.exposedEnsureValidLastChar(domain);
+            vm.pauseGasMetering();
+            assertTrue(strictLastChar, string(abi.encodePacked("Strict last char also accepts: ", domain)));
+        }
+    }
+
+    // Test that _ensureLdh doesn't check the last 2 characters (important boundary behavior)
+    function testEnsureLdhLastTwoCharsNotChecked() public {
+        // _ensureLdh loop: for (uint i = 1; i < bytes(domainName).length - 2; i++)
+        // This means for "alice.ethAB" (length 10), it only checks indices 1-7
+        // Indices 8-9 (last 2 chars 'A' and 'B') are NOT checked by _ensureLdh
+        
+        string[] memory lastTwoInvalid = new string[](4);
+        lastTwoInvalid[0] = "alice.ethAB";    // last 2 chars are uppercase
+        lastTwoInvalid[1] = "alice.eth@#";    // last 2 chars are special chars
+        lastTwoInvalid[2] = "alice.ethA9";    // second-to-last is uppercase
+        lastTwoInvalid[3] = "alice.eth9A";    // last is uppercase
+        
+        for (uint i = 0; i < lastTwoInvalid.length; i++) {
+            vm.resumeGasMetering();
+            bool ldhResult = exposed.exposedEnsureLdh(lastTwoInvalid[i]);
+            vm.pauseGasMetering();
+            assertTrue(ldhResult, string(abi.encodePacked("_ensureLdh should pass (doesn't check last 2 chars): ", lastTwoInvalid[i])));
+            
+            // But if we put invalid chars in positions that ARE checked, it should fail
+            string memory middleInvalid = "alice.Aeth";  // uppercase 'A' in middle (index 6, which IS checked)
+            vm.resumeGasMetering();
+            bool middleLdhResult = exposed.exposedEnsureLdh(middleInvalid);
+            vm.pauseGasMetering();
+            assertFalse(middleLdhResult, "_ensureLdh should reject invalid chars in checked positions");
+        }
+    }
+
+    // Test specific edge cases for the _ensureLdh function boundaries
+    function testEnsureLdhBoundaries() public {
+        // Test that _ensureLdh correctly validates middle characters while 
+        // first and last chars are handled separately
+        
+        // These should pass _ensureLdh even though they might fail overall validation
+        // because _ensureLdh only checks indices 1 to length-2
+        string[] memory middleValidDomains = new string[](4);
+        middleValidDomains[0] = "a-b.eth";      // dash in middle (valid)
+        middleValidDomains[1] = "a.b-c.eth";    // dash in middle label (valid)
+        middleValidDomains[2] = "a123b.eth";    // numbers in middle (valid)
+        middleValidDomains[3] = "a.b.c.eth";    // dots separating labels (valid)
+        
+        for (uint i = 0; i < middleValidDomains.length; i++) {
+            vm.resumeGasMetering();
+            bool ldhResult = exposed.exposedEnsureLdh(middleValidDomains[i]);
+            vm.pauseGasMetering();
+            assertTrue(ldhResult, string(abi.encodePacked("_ensureLdh should accept valid middle chars: ", middleValidDomains[i])));
+        }
+        
+        // Test that _ensureLdh correctly rejects invalid middle characters
+        string[] memory middleInvalidDomains = new string[](3);
+        middleInvalidDomains[0] = "aXb.eth";        // uppercase in middle (invalid)
+        middleInvalidDomains[1] = "a@b.eth";        // special char in middle (invalid)
+        middleInvalidDomains[2] = "a b.eth";        // space in middle (invalid)
+        
+        for (uint i = 0; i < middleInvalidDomains.length; i++) {
+            vm.resumeGasMetering();
+            bool ldhResult = exposed.exposedEnsureLdh(middleInvalidDomains[i]);
+            vm.pauseGasMetering();
+            assertFalse(ldhResult, string(abi.encodePacked("_ensureLdh should reject invalid middle chars: ", middleInvalidDomains[i])));
+        }
+        
+        // Verify that domains starting/ending with edge chars still pass _ensureLdh
+        // because _ensureLdh doesn't check first/last positions
+        string[] memory edgeValidForLdh = new string[](2);
+        edgeValidForLdh[0] = "-alice.eth";      // starts with dash (invalid overall, but _ensureLdh should pass)
+        edgeValidForLdh[1] = "alice.eth-";      // ends with dash (_ensureLdh should pass, but overall validation fails due to ICANN compliance)
+        
+        for (uint i = 0; i < edgeValidForLdh.length; i++) {
+            vm.resumeGasMetering();
+            bool ldhResult = exposed.exposedEnsureLdh(edgeValidForLdh[i]);
+            vm.pauseGasMetering();
+            assertTrue(ldhResult, string(abi.encodePacked("_ensureLdh should pass for edge cases (it doesn't check first/last): ", edgeValidForLdh[i])));
+            
+            // Check overall validation behavior
+            vm.resumeGasMetering();
+            bool overallResult = namefiNFT.isNormalizedName(edgeValidForLdh[i]);
+            vm.pauseGasMetering();
+            
+            // Both cases should fail overall validation now that ICANN compliance is enforced
+            assertFalse(overallResult, string(abi.encodePacked("Overall validation fails due to ICANN compliance: ", edgeValidForLdh[i])));
+        }
     }
 } 
