@@ -24,6 +24,7 @@ task("namefi-manual-deploy", "Generate manual deployment instructions for any wa
         const expectedAddress = ethers.utils.getCreate2Address(NICK_DEPLOYER, nonce, initCodeHash);
         
         console.log(`Manual Deployment Instructions for ${contract}`);
+        console.log(`Bytecode: ${initCode}`);
         console.log(`${"=".repeat(50)}`);
         console.log(`To:       ${NICK_DEPLOYER}`);
         console.log(`Value:    0 ETH`);
