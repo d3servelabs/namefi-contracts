@@ -6,6 +6,7 @@ import './tasks/deploy';
 import './tasks/nick-deploy';
 import './tasks/mgmt';
 import './tasks/get-tx';
+import './tasks/mine-nonce';
 
 dotenv.config();
 

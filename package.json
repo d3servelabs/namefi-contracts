@@ -21,7 +21,9 @@
     "forge:gas-snapshot": "forge snapshot",
     "forge:gas-snapshot:check": "forge snapshot --check",
     "forge:snapshot": "forge snapshot",
-    "ci": "act -j build --container-architecture linux/amd64 -v -P ubuntu-latest=node:22-bullseye --privileged"
+    "ci": "act -j build --container-architecture linux/amd64 -v -P ubuntu-latest=node:22-bullseye --privileged",
+    "mine-nonce:nft": "hardhat namefi-mine-nonce --contract NamefiNFT",
+    "mine-nonce:sc": "hardhat namefi-mine-nonce --contract NamefiServiceCredit"
   },
   "author": "Zainan Victor Zhou et al with Team Namefi by D3ServeLabs",
   "license": "Apache-2.0+",
