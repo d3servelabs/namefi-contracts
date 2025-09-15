@@ -76,6 +76,64 @@ npx hardhat namefi-grant-nft-minter --minter 0xEe15C2735eD48C80f50fe666b45fE9ec6
 ```sh
 npx hardhat namefi-grant-nfsc-minter --minter 0x1b0f291c8fFebE891886351CDfF8A304a840C8Ad --network goerli
 ```
+## Historical Deployment
+
+### Notes
+
+#### Upgrade to v1.4.0-rc1
+
+Step 1: Mine the nonce
+```
+npx hardhat namefi-mine-nonce --contract NamefiNFT --logInterval 2
+```
+
+Step 2: Get the transaction data
+```
+npx hardhat namefi-manual-deploy --contract NamefiNFT --nonce 0x0b55450a724b576806d976297137156e9d21d3175670110d407160da503efdc3 > tx.md
+```
+Gets the transaction data to upgrade to v1.4.0-rc1
+
+Step 3: Deploy the new logic contract of NamefiNFT onto Seplia
+
+- [TX info on Gnosis Safe](https://app.safe.global/transactions/tx?safe=sep:0xFafa4243Ec016187E03388d70B7c5819616C44D5&id=multisig_0xFafa4243Ec016187E03388d70B7c5819616C44D5_0xd678f5eb3ca22973660ea5321defc5747aec11e42bb1b7c8de778e0992b4532f), 
+- [TX info on Etherscan](https://sepolia.etherscan.io/tx/0x0b55450a724b576806d976297137156e9d21d3175670110d407160da503efdc3)
+
+Step 4: Upgrade the NamefiNFT proxy contract on Sepolia
+
+```
+npx hardhat namefi-upgrade \
+  --proxy-address 0x0000000000cf80E7Cf8Fa4480907f692177f8e06 \
+  --logic-address 0x000002609b5fbf4ef2d70bcf6fd5a4c3001e2aa0 \
+  --network sepolia --dry-run
+```
+Which yields
+```
+Proxy address is 0x0000000000cf80E7Cf8Fa4480907f692177f8e06
+Admin address is 0x00000000009209F45C2822E3f11b7a73014130F1
+
+Manual Upgrade Transaction for Proxy
+==================================================
+To:       0x00000000009209F45C2822E3f11b7a73014130F1
+Value:    0 ETH
+Data:     0x99a88ec40000000000000000000000000000000000cf80e7cf8fa4480907f692177f8e06000000000000000000000000000002609b5fbf4ef2d70bcf6fd5a4c3001e2aa0
+==================================================
+Copy the data above into your wallet's custom transaction field
+
+This will upgrade proxy 0x0000000000cf80E7Cf8Fa4480907f692177f8e06 to implementation 0x000002609b5fbf4ef2d70bcf6fd5a4c3001e2aa0
+
+⏸️  Dry-run mode: Transaction data generated but not executed
+```
+
+(We need to add D3Serve Tester Gnosis Safe(0xFafa4243Ec016187E03388d70B7c5819616C44D5) to the Admin of the ProxyAdmin(0x00000000009209F45C2822E3f11b7a73014130F1) )
+
+Step 5: Execute the upgrade transaction
+
+Used sepolia.etherscan.io to upgrade the NamefiNFT proxy contract on Sepolia
+
+https://sepolia.etherscan.io/tx/0xcf7a79f3d034620128b2d533951eca1c1223f45accaefc315592e8f709c8c53f
+
+Step 6: Verify the upgrade transaction
+
 
 #### Upgrade to v1.2.0
 
