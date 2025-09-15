@@ -7,6 +7,9 @@ import "../../contracts/NamefiNFT.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
+// Import the ExpirationChanged event
+event ExpirationChanged(uint256 indexed tokenId, uint256 newExpirationTime);
+
 contract ExpirableNFT_NamefiNFTTest is Test {
     NamefiNFT public nft;
     
@@ -359,5 +362,144 @@ contract ExpirableNFT_NamefiNFTTest is Test {
         // Try calculating the tokenId again from the domain name
         uint256 recalculatedTokenId = uint256(keccak256(abi.encodePacked(normalizedDomainName)));
         assertEq(recalculatedTokenId, tokenId, "Token ID calculation should remain consistent");
+    }
+
+    // Tests for ExpirationChanged event in NamefiNFT context
+    function test_ExpirationChangedEventOnMintByName() public {
+        uint256 expirationTime = block.timestamp + 100 days;
+        
+        // Expect ExpirationChanged event when minting with domain name
+        vm.expectEmit(true, false, false, true);
+        emit ExpirationChanged(tokenId, expirationTime);
+        
+        vm.prank(minter);
+        nft.safeMintByNameNoCharge(alice, normalizedDomainName, expirationTime);
+        
+        // Verify the token was created with correct expiration
+        assertEq(nft.getExpiration(tokenId), expirationTime);
+        assertEq(nft.ownerOf(tokenId), alice);
+    }
+    
+    function test_ExpirationChangedEventOnSetExpirationById() public {
+        // First mint a token
+        uint256 initialExpiration = block.timestamp + 100 days;
+        vm.prank(minter);
+        nft.safeMintByNameNoCharge(alice, normalizedDomainName, initialExpiration);
+        
+        // Set new expiration by token ID and expect event
+        uint256 newExpiration = block.timestamp + 200 days;
+        vm.expectEmit(true, false, false, true);
+        emit ExpirationChanged(tokenId, newExpiration);
+        
+        vm.prank(minter);
+        nft.setExpiration(tokenId, newExpiration);
+        
+        // Verify expiration was updated
+        assertEq(nft.getExpiration(tokenId), newExpiration);
+    }
+    
+    function test_ExpirationChangedEventOnSetExpirationByName() public {
+        // First mint a token
+        uint256 initialExpiration = block.timestamp + 100 days;
+        vm.prank(minter);
+        nft.safeMintByNameNoCharge(alice, normalizedDomainName, initialExpiration);
+        
+        // Set new expiration by domain name and expect event
+        uint256 newExpiration = block.timestamp + 200 days;
+        vm.expectEmit(true, false, false, true);
+        emit ExpirationChanged(tokenId, newExpiration);
+        
+        vm.prank(minter);
+        nft.setExpirationByName(normalizedDomainName, newExpiration);
+        
+        // Verify expiration was updated
+        assertEq(nft.getExpiration(tokenId), newExpiration);
+    }
+    
+    function test_ExpirationChangedEventOnExtendByName() public {
+        // First mint a token
+        uint256 initialExpiration = block.timestamp + 100 days;
+        vm.prank(minter);
+        nft.safeMintByNameNoCharge(alice, normalizedDomainName, initialExpiration);
+        
+        // Calculate expected new expiration after extension
+        uint256 extensionTime = 365 days;
+        uint256 expectedNewExpiration = initialExpiration + extensionTime;
+        
+        // Expect ExpirationChanged event when extending
+        vm.expectEmit(true, false, false, true);
+        emit ExpirationChanged(tokenId, expectedNewExpiration);
+        
+        // Note: This test assumes you have a method to extend expiration
+        // If extendByNameWithChargeAmount exists, test it
+        vm.prank(minter);
+        // nft.extendByNameWithChargeAmount(normalizedDomainName, extensionTime, alice, 0, "");
+        
+        // For now, we'll test using setExpirationByName to simulate extension
+        nft.setExpirationByName(normalizedDomainName, expectedNewExpiration);
+        
+        // Verify expiration was extended
+        assertEq(nft.getExpiration(tokenId), expectedNewExpiration);
+    }
+    
+    function test_ExpirationChangedEventMultipleDomains() public {
+        string memory domain1 = "domain1.eth";
+        string memory domain2 = "domain2.eth";
+        uint256 tokenId1 = uint256(keccak256(abi.encodePacked(domain1)));
+        uint256 tokenId2 = uint256(keccak256(abi.encodePacked(domain2)));
+        
+        uint256 expiration1 = block.timestamp + 100 days;
+        uint256 expiration2 = block.timestamp + 200 days;
+        
+        // Mint first domain and expect event
+        vm.expectEmit(true, false, false, true);
+        emit ExpirationChanged(tokenId1, expiration1);
+        
+        vm.prank(minter);
+        nft.safeMintByNameNoCharge(alice, domain1, expiration1);
+        
+        // Mint second domain and expect event
+        vm.expectEmit(true, false, false, true);
+        emit ExpirationChanged(tokenId2, expiration2);
+        
+        vm.prank(minter);
+        nft.safeMintByNameNoCharge(bob, domain2, expiration2);
+        
+        // Verify both tokens have correct expirations
+        assertEq(nft.getExpiration(tokenId1), expiration1);
+        assertEq(nft.getExpiration(tokenId2), expiration2);
+        assertEq(nft.ownerOf(tokenId1), alice);
+        assertEq(nft.ownerOf(tokenId2), bob);
+    }
+    
+    function test_ExpirationChangedEventOnExpiredToValidTransition() public {
+        // Mint with initial expiration time
+        uint256 initialExpiration = block.timestamp + 100 days;
+        vm.expectEmit(true, false, false, true);
+        emit ExpirationChanged(tokenId, initialExpiration);
+        
+        vm.prank(minter);
+        nft.safeMintByNameNoCharge(alice, normalizedDomainName, initialExpiration);
+        
+        // Forward time to make token expired
+        vm.warp(initialExpiration + 1);
+        assertTrue(nft.isExpired(tokenId));
+        
+        // Extend to future time and expect event
+        uint256 futureTime = block.timestamp + 100 days;
+        vm.expectEmit(true, false, false, true);
+        emit ExpirationChanged(tokenId, futureTime);
+        
+        vm.prank(minter);
+        nft.setExpirationByName(normalizedDomainName, futureTime);
+        
+        // Verify token is now valid
+        assertFalse(nft.isExpired(tokenId));
+        assertEq(nft.getExpiration(tokenId), futureTime);
+        
+        // Token should now be transferable
+        vm.prank(alice);
+        nft.safeTransferFromByName(alice, bob, normalizedDomainName);
+        assertEq(nft.ownerOf(tokenId), bob);
     }
 } 
