@@ -80,60 +80,77 @@ npx hardhat namefi-grant-nfsc-minter --minter 0x1b0f291c8fFebE891886351CDfF8A304
 
 ### Notes
 
-#### Upgrade to v1.4.0-rc1
+#### Upgrade to v1.4.0-rc1 NamefiNFT
+
+Step 0: Re-compile the contract!
+Make sure to re-compile the contract! Otherwise the verification will fail.
 
 Step 1: Mine the nonce
 ```
-npx hardhat namefi-mine-nonce --contract NamefiNFT --logInterval 2
+npx hardhat namefi-mine-nonce --contract NamefiNFT
 ```
+
 
 Step 2: Get the transaction data
 ```
-npx hardhat namefi-manual-deploy --contract NamefiNFT --nonce 0x0b55450a724b576806d976297137156e9d21d3175670110d407160da503efdc3 > tx.md
+npx hardhat namefi-manual-deploy --contract NamefiNFT --nonce 0x19e9cc052fb15e8191ebd19f59d8c1c2574b45beeb5a2b7f81a37acc38da04eb > tx.md
 ```
 Gets the transaction data to upgrade to v1.4.0-rc1
 
 Step 3: Deploy the new logic contract of NamefiNFT onto Seplia
 
-- [TX info on Gnosis Safe](https://app.safe.global/transactions/tx?safe=sep:0xFafa4243Ec016187E03388d70B7c5819616C44D5&id=multisig_0xFafa4243Ec016187E03388d70B7c5819616C44D5_0xd678f5eb3ca22973660ea5321defc5747aec11e42bb1b7c8de778e0992b4532f), 
-- [TX info on Etherscan](https://sepolia.etherscan.io/tx/0x0b55450a724b576806d976297137156e9d21d3175670110d407160da503efdc3)
+- [TX info on Etherscan](https://sepolia.etherscan.io/tx/0x422ef2bc3ae6e17cc3d407b573297d49a7617f5d4a927d0227e5c948e1c9d230)
+
+- [TX info on Gnosis Safe](https://app.safe.global/transactions/tx?safe=sep:0xFafa4243Ec016187E03388d70B7c5819616C44D5&id=multisig_0xFafa4243Ec016187E03388d70B7c5819616C44D5_0x4d2ca97ba61328d8b9b7473177caefcd07a43e2e9448c066417bc1c7bed8d025)
+
 
 Step 4: Upgrade the NamefiNFT proxy contract on Sepolia
 
-```
-npx hardhat namefi-upgrade \
-  --proxy-address 0x0000000000cf80E7Cf8Fa4480907f692177f8e06 \
-  --logic-address 0x000002609b5fbf4ef2d70bcf6fd5a4c3001e2aa0 \
-  --network sepolia --dry-run
-```
-Which yields
-```
-Proxy address is 0x0000000000cf80E7Cf8Fa4480907f692177f8e06
+NamefiNFT Proxy address is 0x0000000000cf80E7Cf8Fa4480907f692177f8e06
 Admin address is 0x00000000009209F45C2822E3f11b7a73014130F1
+Go to Admin Address: https://sepolia.etherscan.io/address/0x00000000009209f45c2822e3f11b7a73014130f1#code
 
-Manual Upgrade Transaction for Proxy
-==================================================
-To:       0x00000000009209F45C2822E3f11b7a73014130F1
-Value:    0 ETH
-Data:     0x99a88ec40000000000000000000000000000000000cf80e7cf8fa4480907f692177f8e06000000000000000000000000000002609b5fbf4ef2d70bcf6fd5a4c3001e2aa0
-==================================================
-Copy the data above into your wallet's custom transaction field
+Write Contract: 
+proxy (address) = 0x0000000000cf80E7Cf8Fa4480907f692177f8e06
+implementation (address) = 0x00008eea299efc29d7bdafec0465feaa828064fa
 
-This will upgrade proxy 0x0000000000cf80E7Cf8Fa4480907f692177f8e06 to implementation 0x000002609b5fbf4ef2d70bcf6fd5a4c3001e2aa0
+- [TX info on Etherscan](https://sepolia.etherscan.io/tx/0x113424ef95c5039f86d309e239fe7f741a450b4ba5dfa8668f13eaff9c6ec506)
 
-⏸️  Dry-run mode: Transaction data generated but not executed
+
+Step 5: Verify the upgrade transaction
+
+5.1: Verify on the sepolia.etherscan.io
+
+```
+npx hardhat verify --network sepolia --contract contracts/NamefiNFT.sol:NamefiNFT 0x00008eea299efc29d7bdafec0465feaa828064fa
 ```
 
-(We need to add D3Serve Tester Gnosis Safe(0xFafa4243Ec016187E03388d70B7c5819616C44D5) to the Admin of the ProxyAdmin(0x00000000009209F45C2822E3f11b7a73014130F1) )
+```
+❯ npx hardhat verify --network sepolia --contract contracts/NamefiNFT.sol:NamefiNFT 0x00008eea299efc29d7bdafec0465feaa828064fa
+Nothing to compile
+No need to generate any newer typings.
+Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.
+   --> contracts/NamefiNFT.sol:399:9:
+    |
+399 |         bytes memory extraData) external virtual onlyRole(MINTER_ROLE) {
+    |         ^^^^^^^^^^^^^^^^^^^^^^
 
-Step 5: Execute the upgrade transaction
 
-Used sepolia.etherscan.io to upgrade the NamefiNFT proxy contract on Sepolia
+Successfully submitted source code for contract
+contracts/NamefiNFT.sol:NamefiNFT at 0x00008eea299efc29d7bdafec0465feaa828064fa
+for verification on the block explorer. Waiting for verification result...
 
-https://sepolia.etherscan.io/tx/0xcf7a79f3d034620128b2d533951eca1c1223f45accaefc315592e8f709c8c53f
+Successfully verified contract NamefiNFT on Etherscan.
+https://sepolia.etherscan.io/address/0x00008eea299efc29d7bdafec0465feaa828064fa#code
+```
 
-Step 6: Verify the upgrade transaction
+5.2 Verify on blockscout.com
 
+```
+npx hardhat verify --network sepolia_blockscout --contract contracts/NamefiNFT.sol:NamefiNFT 0x00008eea299efc29d7bdafec0465feaa828064fa
+```
+
+But it stuck for 5min and didn't proceed.
 
 #### Upgrade to v1.2.0
 
