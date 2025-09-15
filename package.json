@@ -1,6 +1,6 @@
 {
   "name": "namefi-contracts",
-  "version": "1.4.0-wip",
+  "version": "1.4.0-rc1",
   "description": "",
   "main": "index.js",
   "packageManager": "bun@1.1.0",
