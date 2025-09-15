@@ -6,7 +6,7 @@ const NICK_DEPLOYER = "0x4e59b44847b379578588920ca78fbf26c0b4956c";
 
 task("namefi-mine-nonce", "Mine nonce for deterministic contract deployment")
     .addParam("contract", "Contract name (NamefiNFT or NamefiServiceCredit)")
-    .addOptionalParam("logInterval", "Log interval in seconds", "5")
+    .addOptionalParam("logInterval", "Log interval in seconds", "2")
     .setAction(async ({ contract, logInterval }: TaskArguments, { ethers }) => {
         // Validate contract
         if (!["NamefiNFT", "NamefiServiceCredit"].includes(contract)) {
@@ -72,4 +72,5 @@ task("namefi-mine-nonce", "Mine nonce for deterministic contract deployment")
         console.log(`📝 Nonce: ${bestNonce}`);
         console.log(`\n💡 Deploy with:`);
         console.log(`npx hardhat namefi-nick-deploy-logic --logic-contract-name ${contract} --nonce ${bestNonce} --dry-run`);
+        console.log(`npx hardhat namefi-manual-deploy --contract ${contract} --nonce ${bestNonce}`);
     });
