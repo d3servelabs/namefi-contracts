@@ -7,7 +7,8 @@ const NICK_DEPLOYER = "0x4e59b44847b379578588920ca78fbf26c0b4956c";
 task("namefi-mine-nonce", "Mine nonce for deterministic contract deployment")
     .addParam("contract", "Contract name (NamefiNFT or NamefiServiceCredit)")
     .addOptionalParam("logInterval", "Log interval in seconds", "2")
-    .setAction(async ({ contract, logInterval }: TaskArguments, { ethers }) => {
+    .addOptionalParam("limitInterval", "Stop mining after N seconds", "6")
+    .setAction(async ({ contract, logInterval, limitInterval }: TaskArguments, { ethers }) => {
         // Validate contract
         if (!["NamefiNFT", "NamefiServiceCredit"].includes(contract)) {
             throw new Error(`Invalid contract: ${contract}`);
@@ -19,7 +20,9 @@ task("namefi-mine-nonce", "Mine nonce for deterministic contract deployment")
         const initCodeHash = ethers.utils.keccak256(initCode);
         
         console.log(`Mining ${contract}... (continuous, ${logInterval}s logs)`);
-        console.log(`InitCode hash: ${initCodeHash}\n`);
+        console.log(`InitCode hash: ${initCodeHash}`);
+        console.log(`Bytecode: ${initCode}`);
+        console.log(`Artifacts: ${__dirname}/../artifacts/contracts/${contract}.sol/${contract}.json\n`);
         
         let bestAddress = "0xffffffffffffffffffffffffffffffffffffffff";
         let bestNonce = "";
@@ -29,6 +32,7 @@ task("namefi-mine-nonce", "Mine nonce for deterministic contract deployment")
         const startTime = Date.now();
         let lastLogTime = startTime;
         const logMs = parseInt(logInterval) * 1000;
+        const limitMs = parseInt(limitInterval) * 1000;
         
         // Handle Ctrl+C
         process.on('SIGINT', () => {
@@ -62,6 +66,13 @@ task("namefi-mine-nonce", "Mine nonce for deterministic contract deployment")
                 // Yield for Ctrl+C handling
                 await new Promise(resolve => setImmediate(resolve));
                 if (shouldStop) break;
+            }
+            
+            // Check time limit
+            if (now - startTime >= limitMs) {
+                shouldStop = true;
+                console.log(`\n⏰ Time limit reached (${limitInterval}s)`);
+                break;
             }
         }
         
