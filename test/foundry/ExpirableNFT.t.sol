@@ -6,6 +6,9 @@ import "forge-std/Test.sol";
 import "../../contracts/ExpirableNFT.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
+// Import the ExpirationChanged event
+event ExpirationChanged(uint256 indexed tokenId, uint256 newExpirationTime);
+
 // Concrete implementation of ExpirableNFT for testing
 contract TestExpirableNFT is ERC721, ExpirableNFT {
     address public minter;
@@ -368,5 +371,116 @@ contract ExpirableNFTTest is Test {
         vm.prank(charlie);
         nft.setExpiration(TOKEN_ID, block.timestamp + 200);
         assertEq(nft.getExpiration(TOKEN_ID), block.timestamp + 200);
+    }
+
+    // Tests for ExpirationChanged event emission
+    function test_ExpirationChangedEventOnMint() public {
+        uint256 expirationTime = block.timestamp + 100 days;
+        
+        // Expect ExpirationChanged event when minting with expiration
+        vm.expectEmit(true, false, false, true);
+        emit ExpirationChanged(TOKEN_ID, expirationTime);
+        
+        // Mint token (which internally calls _setExpiration)
+        nft.mint(alice, TOKEN_ID, expirationTime);
+        
+        // Verify the token was created with correct expiration
+        assertEq(nft.getExpiration(TOKEN_ID), expirationTime);
+    }
+    
+    function test_ExpirationChangedEventOnSetExpiration() public {
+        // First mint a token
+        uint256 initialExpiration = block.timestamp + 100 days;
+        nft.mint(alice, TOKEN_ID, initialExpiration);
+        
+        // Set new expiration and expect event
+        uint256 newExpiration = block.timestamp + 200 days;
+        vm.expectEmit(true, false, false, true);
+        emit ExpirationChanged(TOKEN_ID, newExpiration);
+        
+        vm.prank(alice);
+        nft.setExpiration(TOKEN_ID, newExpiration);
+        
+        // Verify expiration was updated
+        assertEq(nft.getExpiration(TOKEN_ID), newExpiration);
+    }
+    
+    function test_ExpirationChangedEventMultipleUpdates() public {
+        // Mint token
+        uint256 initialExpiration = block.timestamp + 100 days;
+        nft.mint(alice, TOKEN_ID, initialExpiration);
+        
+        // First update
+        uint256 firstUpdate = block.timestamp + 150 days;
+        vm.expectEmit(true, false, false, true);
+        emit ExpirationChanged(TOKEN_ID, firstUpdate);
+        
+        vm.prank(alice);
+        nft.setExpiration(TOKEN_ID, firstUpdate);
+        
+        // Second update
+        uint256 secondUpdate = block.timestamp + 300 days;
+        vm.expectEmit(true, false, false, true);
+        emit ExpirationChanged(TOKEN_ID, secondUpdate);
+        
+        vm.prank(alice);
+        nft.setExpiration(TOKEN_ID, secondUpdate);
+        
+        // Verify final expiration
+        assertEq(nft.getExpiration(TOKEN_ID), secondUpdate);
+    }
+    
+    function test_ExpirationChangedEventWithZeroTime() public {
+        // Mint token with future expiration
+        uint256 initialExpiration = block.timestamp + 100 days;
+        nft.mint(alice, TOKEN_ID, initialExpiration);
+        
+        // Set expiration to 0 (immediate expiry)
+        vm.expectEmit(true, false, false, true);
+        emit ExpirationChanged(TOKEN_ID, 0);
+        
+        vm.prank(alice);
+        nft.setExpiration(TOKEN_ID, 0);
+        
+        // Verify token is now expired
+        assertTrue(nft.isExpired(TOKEN_ID));
+        assertEq(nft.getExpiration(TOKEN_ID), 0);
+    }
+    
+    function test_ExpirationChangedEventWithPastTime() public {
+        // Mint token
+        uint256 initialExpiration = block.timestamp + 100 days;
+        nft.mint(alice, TOKEN_ID, initialExpiration);
+        
+        // Set expiration to past time
+        uint256 pastTime = block.timestamp - 100;
+        vm.expectEmit(true, false, false, true);
+        emit ExpirationChanged(TOKEN_ID, pastTime);
+        
+        vm.prank(alice);
+        nft.setExpiration(TOKEN_ID, pastTime);
+        
+        // Verify token is expired and has correct expiration time
+        assertTrue(nft.isExpired(TOKEN_ID));
+        assertEq(nft.getExpiration(TOKEN_ID), pastTime);
+    }
+    
+    function test_ExpirationChangedEventFromExpiredToValid() public {
+        // Mint token with past expiration (immediately expired)
+        uint256 pastTime = block.timestamp - 100;
+        nft.mint(alice, TOKEN_ID, pastTime);
+        assertTrue(nft.isExpired(TOKEN_ID));
+        
+        // Extend to future time and expect event
+        uint256 futureTime = block.timestamp + 100 days;
+        vm.expectEmit(true, false, false, true);
+        emit ExpirationChanged(TOKEN_ID, futureTime);
+        
+        vm.prank(alice);
+        nft.setExpiration(TOKEN_ID, futureTime);
+        
+        // Verify token is now valid
+        assertFalse(nft.isExpired(TOKEN_ID));
+        assertEq(nft.getExpiration(TOKEN_ID), futureTime);
     }
 } 
