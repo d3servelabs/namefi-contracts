@@ -198,9 +198,9 @@ describe("NamefiNFT", function () {
     it("Should yield an event of Lock or Unlock", async function () {
       const { instance, signers, minter } = await loadFixture(deployFixture);
       
-      const alice = signers[1];
-      const bob = signers[2];
-      const charlie = signers[3];
+      const alice = signers[3];
+      const bob = signers[4];
+      const charlie = signers[5];
       const normalizedDomainName = "bob.alice.eth";
       const tokenId = ethers.utils.id(normalizedDomainName);
   
