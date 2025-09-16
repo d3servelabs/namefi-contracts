@@ -152,6 +152,27 @@ npx hardhat verify --network sepolia_blockscout --contract contracts/NamefiNFT.s
 
 But it stuck for 5min and didn't proceed.
 
+Step 6: Deploy onto Base and Etheruem
+
+- [TX info on Etherscan](https://etherscan.io/tx/0x8c1bae2b4532e658e5f60f4fcd9ee4ca213130d71e5c2562bb5ebdf7ed3a1c16)
+- [TX info on Base](https://basescan.org/tx/0x17f923aff15dfdc99cf6600e38367df9940fdac431d3b861be9942b0dd310920)
+
+Step 6: Upgrade the NamefiNFT proxy contract to point to the new logic contract
+
+- [TX info on Etherscan](https://etherscan.io/tx/0x0936c91e08e0c6212a89a277ebb5cd17e048a6be734586fcc961650147d391e0)
+
+Migrated NamefiNFT ProxyAdmin owner to dev.d3serve.eth:
+- [TX info on Base](https://basescan.org/tx/0x48a5895fb2bad7b36dcad7137436a07aba5c970e7bb01c591ac89a951a458cce)
+
+- Upgrade NamefiNFT ProxyAdmin owner to dev.d3serve.eth:
+
+- [TX info on Base](https://basescan.org/tx/0xea028eed060aab2fc331a98fdba238d3167369495cadb14d45f16f6b38a82f92#eventlog)
+
+Step 7: Verify logic on Ethereum and Base
+- Etheruem on Blockscout: https://eth.blockscout.com/address/0x00008eea299efc29d7bdafec0465feaa828064fa#code
+- Base on Basescan: https://basescan.org/address/0x00008eea299efc29d7bdafec0465feaa828064fa#code
+
+
 #### Upgrade to v1.2.0
 
 ```sh
