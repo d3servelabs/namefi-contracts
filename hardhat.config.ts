@@ -42,6 +42,12 @@ const config: HardhatUserConfig = {
         mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
       },
     },
+    ethereum: {
+      url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: {
+        mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
+      },
+    },
     mainnet_blockscout: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: {
@@ -90,6 +96,12 @@ const config: HardhatUserConfig = {
         mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
       }
     },
+    base_blockscout: {
+      url: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: {
+        mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
+      }
+    },
     dashboard: {
       url: "http://localhost:24012/rpc",
       timeout: 1200000,
@@ -98,6 +110,7 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY as string,
+      ethereum: process.env.ETHERSCAN_API_KEY as string,
       mainnet_blockscout: process.env.BLOCKSCOUT_API_KEY as string,
       sepolia: process.env.ETHERSCAN_API_KEY as string,
       sepolia_blockscout: process.env.BLOCKSCOUT_API_KEY as string,
@@ -107,8 +120,17 @@ const config: HardhatUserConfig = {
       polygon: process.env.POLYGONSCAN_API_KEY as string,
       polygonMumbai: process.env.POLYGONSCAN_API_KEY as string,
       base: process.env.BASESCAN_API_KEY as string,
+      base_blockscout: process.env.BLOCKSCOUT_API_KEY as string,
     },
     customChains: [
+      {
+        network: "ethereum",
+        chainId: 1,
+        urls: {
+          apiURL: "https://api.etherscan.io/api",
+          browserURL: "https://etherscan.io"
+        }
+      },
       {
         network: "dashboard",
         chainId: 5,
@@ -155,6 +177,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://api.basescan.org/api",
           browserURL: "https://basescan.org"
+        }
+      },
+      {
+        network: "base_blockscout",
+        chainId: 8453,
+        urls: {
+          apiURL: "https://base.blockscout.com/api",
+          browserURL: "https://base.blockscout.com"
         }
       },
     ]
