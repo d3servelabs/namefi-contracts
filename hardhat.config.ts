@@ -36,6 +36,12 @@ const config: HardhatUserConfig = {
     coinmarketcap: process.env.COINMARKETCAP_API_KEY || "",
   },
   networks: {
+    hardhat: {
+      forking: {
+        url: process.env.ROBINHOOD_TESTNET_RPC_URL || "https://rpc.testnet.chain.robinhood.com",
+      },
+      chainId: 46630,
+    },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: {
@@ -102,6 +108,13 @@ const config: HardhatUserConfig = {
         mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
       }
     },
+    robinhood_testnet: {
+      url: process.env.ROBINHOOD_TESTNET_RPC_URL || `https://rpc.testnet.chain.robinhood.com`,
+      chainId: 46630,
+      accounts: {
+        mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
+      },
+    },
     dashboard: {
       url: "http://localhost:24012/rpc",
       timeout: 1200000,
@@ -121,6 +134,7 @@ const config: HardhatUserConfig = {
       polygonMumbai: process.env.POLYGONSCAN_API_KEY as string,
       base: process.env.BASESCAN_API_KEY as string,
       base_blockscout: process.env.BLOCKSCOUT_API_KEY as string,
+      robinhood_testnet: "no-api-key-needed",
     },
     customChains: [
       {
@@ -185,6 +199,14 @@ const config: HardhatUserConfig = {
         urls: {
           apiURL: "https://base.blockscout.com/api",
           browserURL: "https://base.blockscout.com"
+        }
+      },
+      {
+        network: "robinhood_testnet",
+        chainId: 46630,
+        urls: {
+          apiURL: "https://explorer.testnet.chain.robinhood.com/api",
+          browserURL: "https://explorer.testnet.chain.robinhood.com"
         }
       },
     ]
