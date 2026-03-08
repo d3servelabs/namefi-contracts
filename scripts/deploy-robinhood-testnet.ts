@@ -122,6 +122,17 @@ async function main() {
   const balanceEth = ethers.utils.formatEther(balance);
 
   console.log(`\nDeployer Address: ${signerAddr}`);
+  console.log(`Expected Address: ${NAMEFIDAO}`);
+
+  // Verify signer matches expected address
+  if (signerAddr.toLowerCase() !== NAMEFIDAO.toLowerCase()) {
+    throw new Error(
+      `Signer mismatch! Expected ${NAMEFIDAO}, got ${signerAddr}. ` +
+      `Check your MNEMONIC — the account at index 0 should be ${NAMEFIDAO}`
+    );
+  }
+  console.log(`✓ Signer matches expected address`);
+
   console.log(`Balance: ${balanceEth} ETH`);
 
   if (balance.lt(ethers.utils.parseEther("1"))) {
