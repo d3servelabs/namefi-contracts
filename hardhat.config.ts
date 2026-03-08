@@ -38,7 +38,7 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       forking: {
-        url: process.env.ROBINHOOD_TESTNET_RPC_URL || "https://rpc.testnet.chain.robinhood.com",
+        url: "https://rpc.testnet.chain.robinhood.com",
       },
       chainId: 46630,
     },
@@ -109,7 +109,7 @@ const config: HardhatUserConfig = {
       }
     },
     robinhood_testnet: {
-      url: process.env.ROBINHOOD_TESTNET_RPC_URL || `https://rpc.testnet.chain.robinhood.com`,
+      url: `https://rpc.testnet.chain.robinhood.com`,
       chainId: 46630,
       accounts: {
         mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
