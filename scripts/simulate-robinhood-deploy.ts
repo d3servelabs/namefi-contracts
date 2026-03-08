@@ -6,7 +6,7 @@
  *
  * Run:
  *   npx hardhat run scripts/simulate-robinhood-deploy.ts --network hardhat
- *
+ *   (or: ./node_modules/.bin/hardhat run scripts/simulate-robinhood-deploy.ts --network robinhood_testnet)
  * (hardhat.config.ts must have forking enabled — see bottom of this file for config snippet)
  */
 
