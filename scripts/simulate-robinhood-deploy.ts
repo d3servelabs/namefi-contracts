@@ -24,9 +24,10 @@ const MULTICALL3    = "0xcA11bde05977b3631167028862bE2a173976CA11";
 const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
 const MINTER_ROLE        = "0xf0887ba65ee2024ea881d91b74c2450ef19e1557f03bed3ea9f16b037cbe2dc9";
 
-// TX senders
-const NAMEFIDAO = "0x1b0f291c8fFebE891886351CDfF8A304a840C8Ad"; // namefidao.eth — Tester Admin
-const PA_OWNER  = "0x01Bf7f00540988622a32de1089B7DeA09a867188"; // op.d3serve.eth — transfers ProxyAdmin ownership
+// Known addresses
+const OP_D3SERVE   = "0x01Bf7f00540988622a32de1089B7DeA09a867188"; // op.d3serve.eth — ProxyAdmin owner, deploys & upgrades
+const NAMEFIDAO    = "0x1b0f291c8fFebE891886351CDfF8A304a840C8Ad"; // namefidao.eth — TARGET_ADMIN for NFT roles
+const MAINNET_ADMIN = "0xEe15C2735eD48C80f50fe666b45fE9ec699daEE5"; // Mainnet NamefiNFT admin
 
 const NFT_IFACE = new ethers.utils.Interface([
   "function initialize()",
@@ -65,8 +66,7 @@ async function main() {
   console.log("Fork: https://rpc.testnet.chain.robinhood.com");
   console.log("=".repeat(60));
 
-  const namefidao = await impersonate(NAMEFIDAO);  // Tester Admin — signs all testnet txs
-  const paOwner   = await impersonate(PA_OWNER);   // op.d3serve.eth — needed only to transfer ProxyAdmin ownership
+  const deployer  = await impersonate(OP_D3SERVE);  // op.d3serve.eth — ProxyAdmin owner, signs deploy + upgrade txs
 
   // ── TX1: Deploy all contracts + upgrade + initialize ──────────────
   console.log("\n[TX1] Deploy + Upgrade + Initialize");
@@ -74,39 +74,33 @@ async function main() {
 
   // 1a: Deploy original impl
   const step1a = deployTxJson.steps[0];
-  await sendRaw(namefidao, NICK_DEPLOYER, step1a.data, "1a: Deploy NamefiNFT original impl");
+  await sendRaw(deployer, NICK_DEPLOYER, step1a.data, "1a: Deploy NamefiNFT original impl");
   const impl_orig_code = await ethers.provider.getCode(IMPL_ORIG);
   console.log(`    Code deployed: ${impl_orig_code.length > 2 ? "YES" : "NO"} at ${IMPL_ORIG}`);
 
-  // 1b: Deploy ProxyAdmin (mainnet calldata sets op.d3serve.eth as owner)
+  // 1b: Deploy ProxyAdmin (CREATE2 initcode sets op.d3serve.eth as owner)
   const step1b = deployTxJson.steps[1];
-  await sendRaw(namefidao, NICK_DEPLOYER, step1b.data, "1b: Deploy ProxyAdmin");
+  await sendRaw(deployer, NICK_DEPLOYER, step1b.data, "1b: Deploy ProxyAdmin");
   const admin_code = await ethers.provider.getCode(PROXY_ADMIN);
   console.log(`    Code deployed: ${admin_code.length > 2 ? "YES" : "NO"} at ${PROXY_ADMIN}`);
 
-  // Testnet setup: op.d3serve.eth transfers ProxyAdmin ownership to Tester Admin (namefidao.eth)
-  const transferOwnershipCalldata = new ethers.utils.Interface([
-    "function transferOwnership(address newOwner)"
-  ]).encodeFunctionData("transferOwnership", [NAMEFIDAO]);
-  await sendRaw(paOwner, PROXY_ADMIN, transferOwnershipCalldata, "1b-post: transferOwnership(namefidao.eth) from op.d3serve.eth");
+  // No ownership transfer needed — op.d3serve.eth is already the ProxyAdmin owner
 
   // 1c: Deploy NFT Proxy
   const step1c = deployTxJson.steps[2];
-  await sendRaw(namefidao, NICK_DEPLOYER, step1c.data, "1c: Deploy NamefiNFT Proxy");
+  await sendRaw(deployer, NICK_DEPLOYER, step1c.data, "1c: Deploy NamefiNFT Proxy");
   const proxy_code = await ethers.provider.getCode(PROXY);
   console.log(`    Code deployed: ${proxy_code.length > 2 ? "YES" : "NO"} at ${PROXY}`);
 
   // 1d: Deploy v1.4.0 impl
   const step1d = deployTxJson.steps[3];
-  await sendRaw(namefidao, NICK_DEPLOYER, step1d.data, "1d: Deploy NamefiNFT v1.4.0 impl");
+  await sendRaw(deployer, NICK_DEPLOYER, step1d.data, "1d: Deploy NamefiNFT v1.4.0 impl");
   const impl_v140_code = await ethers.provider.getCode(IMPL_V140);
   console.log(`    Code deployed: ${impl_v140_code.length > 2 ? "YES" : "NO"} at ${IMPL_V140}`);
 
-  // 1e: Upgrade proxy to v1.4.0 (from namefidao.eth — testnet ProxyAdmin owner)
-  const upgradeCalldata = new ethers.utils.Interface([
-    "function upgrade(address proxy, address implementation)"
-  ]).encodeFunctionData("upgrade", [PROXY, IMPL_V140]);
-  await sendRaw(namefidao, PROXY_ADMIN, upgradeCalldata, "1e: Upgrade proxy to v1.4.0 (from namefidao.eth)");
+  // 1e: Upgrade proxy to v1.4.0 (from op.d3serve.eth — ProxyAdmin owner)
+  const step1e = deployTxJson.steps[4];
+  await sendRaw(deployer, PROXY_ADMIN, step1e.data, "1e: Upgrade proxy to v1.4.0 (from op.d3serve.eth)");
 
   // 1f: Multicall3 — initialize + grant namefidao.eth both roles + revoke Multicall3's own roles (atomic)
   // Multicall3's msg.sender becomes admin after initialize(), so we must grant to namefidao.eth
@@ -115,10 +109,15 @@ async function main() {
     { target: PROXY, allowFailure: false, callData: NFT_IFACE.encodeFunctionData("initialize") },
     { target: PROXY, allowFailure: false, callData: NFT_IFACE.encodeFunctionData("grantRole", [DEFAULT_ADMIN_ROLE, NAMEFIDAO]) },
     { target: PROXY, allowFailure: false, callData: NFT_IFACE.encodeFunctionData("grantRole", [MINTER_ROLE, NAMEFIDAO]) },
+    { target: PROXY, allowFailure: false, callData: NFT_IFACE.encodeFunctionData("grantRole", [DEFAULT_ADMIN_ROLE, MAINNET_ADMIN]) },
+    { target: PROXY, allowFailure: false, callData: NFT_IFACE.encodeFunctionData("grantRole", [MINTER_ROLE, MAINNET_ADMIN]) },
+    // Grant deployer (op.d3serve.eth) both roles so it can manage roles & mint in TX2
+    { target: PROXY, allowFailure: false, callData: NFT_IFACE.encodeFunctionData("grantRole", [DEFAULT_ADMIN_ROLE, OP_D3SERVE]) },
+    { target: PROXY, allowFailure: false, callData: NFT_IFACE.encodeFunctionData("grantRole", [MINTER_ROLE, OP_D3SERVE]) },
     { target: PROXY, allowFailure: false, callData: NFT_IFACE.encodeFunctionData("revokeRole", [MINTER_ROLE, MULTICALL3]) },
     { target: PROXY, allowFailure: false, callData: NFT_IFACE.encodeFunctionData("revokeRole", [DEFAULT_ADMIN_ROLE, MULTICALL3]) },
   ]]);
-  await sendRaw(namefidao, MULTICALL3, mc3Calldata, "1f: Multicall3 — init + grant namefidao.eth + revoke Multicall3 (atomic)");
+  await sendRaw(deployer, MULTICALL3, mc3Calldata, "1f: Multicall3 — init + grant namefidao.eth + revoke Multicall3 (atomic)");
 
   // ── Verify TX1 post-state ─────────────────────────────────────────
   console.log("\n[TX1 Post-State Verification]");
@@ -140,7 +139,7 @@ async function main() {
   const proxyAdmin = new ethers.Contract(PROXY_ADMIN, ["function owner() view returns (address)"], ethers.provider);
   const paOwnerAddr = await proxyAdmin.owner();
   console.log(`  ProxyAdmin owner: ${paOwnerAddr}`);
-  console.log(`  ProxyAdmin owner match (namefidao.eth): ${paOwnerAddr.toLowerCase() === NAMEFIDAO.toLowerCase() ? "✓ PASS" : "✗ FAIL"}`);
+  console.log(`  ProxyAdmin owner match (op.d3serve.eth): ${paOwnerAddr.toLowerCase() === OP_D3SERVE.toLowerCase() ? "✓ PASS" : "✗ FAIL"}`);
 
   const nft = new ethers.Contract(PROXY, [
     "function hasRole(bytes32 role, address account) view returns (bool)"
@@ -149,19 +148,28 @@ async function main() {
   const hasMinter = await nft.hasRole(MINTER_ROLE, NAMEFIDAO);
   console.log(`  namefidao.eth has DEFAULT_ADMIN_ROLE: ${hasAdmin ? "✓ PASS" : "✗ FAIL"}`);
   console.log(`  namefidao.eth has MINTER_ROLE:        ${hasMinter ? "✓ PASS" : "✗ FAIL"}`);
+  const mainnetHasAdmin  = await nft.hasRole(DEFAULT_ADMIN_ROLE, MAINNET_ADMIN);
+  const mainnetHasMinter = await nft.hasRole(MINTER_ROLE, MAINNET_ADMIN);
+  console.log(`  MAINNET_ADMIN has DEFAULT_ADMIN_ROLE: ${mainnetHasAdmin ? "✓ PASS" : "✗ FAIL"}`);
+  console.log(`  MAINNET_ADMIN has MINTER_ROLE:        ${mainnetHasMinter ? "✓ PASS" : "✗ FAIL"}`);
   const mc3HasAdmin  = await nft.hasRole(DEFAULT_ADMIN_ROLE, MULTICALL3);
   const mc3HasMinter = await nft.hasRole(MINTER_ROLE, MULTICALL3);
   console.log(`  Multicall3 has DEFAULT_ADMIN_ROLE: ${!mc3HasAdmin ? "✓ PASS (revoked)" : "✗ FAIL (still holds admin!)"}`);
   console.log(`  Multicall3 has MINTER_ROLE:        ${!mc3HasMinter ? "✓ PASS (revoked)" : "✗ FAIL (still holds minter!)"}`);
+  const deployerHasAdmin  = await nft.hasRole(DEFAULT_ADMIN_ROLE, OP_D3SERVE);
+  const deployerHasMinter = await nft.hasRole(MINTER_ROLE, OP_D3SERVE);
+  console.log(`  op.d3serve.eth has DEFAULT_ADMIN_ROLE: ${deployerHasAdmin ? "✓ PASS" : "✗ FAIL"}`);
+  console.log(`  op.d3serve.eth has MINTER_ROLE:        ${deployerHasMinter ? "✓ PASS" : "✗ FAIL"}`);
 
   // ── TX2: Mint example.com ────────────────────────────────────────
   console.log("\n[TX2] Mint 'example.com' NFT");
   console.log("─".repeat(40));
   const expiry = 1893456000; // 2030-01-01
+  const minter = await impersonate(NAMEFIDAO);  // namefidao.eth has MINTER_ROLE
   const mintCalldata = new ethers.utils.Interface([
     "function safeMintByNameNoCharge(address to, string memory domainName, uint256 expirationTime)"
   ]).encodeFunctionData("safeMintByNameNoCharge", [NAMEFIDAO, "example.com", expiry]);
-  const mintReceipt = await sendRaw(namefidao, PROXY, mintCalldata, "TX2: safeMintByNameNoCharge('example.com')");
+  const mintReceipt = await sendRaw(minter, PROXY, mintCalldata, "TX2: safeMintByNameNoCharge('example.com')");
 
   // ── Verify TX2 post-state ─────────────────────────────────────────
   console.log("\n[TX2 Post-State Verification]");

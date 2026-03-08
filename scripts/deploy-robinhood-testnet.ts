@@ -11,10 +11,13 @@
  *   CONFIRMATIONS: Number of blocks to wait before confirming (defaults to 2)
  *
  * Run:
- *   source .env && MNEMONIC="$SEED_PRHASE" ./node_modules/.bin/hardhat run scripts/deploy-robinhood-testnet.ts --network robinhood_testnet
+ *   source .env && ./node_modules/.bin/hardhat run --network robinhood_testnet scripts/deploy-robinhood-testnet.ts
+ *
+ * Note: MNEMONIC must derive op.d3serve.eth (0x01bf7f...) at index 0,
+ *       because it is the ProxyAdmin owner hardcoded in the CREATE2 initcode.
  */
 
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { readFileSync } from "fs";
 import path from "path";
 
@@ -30,8 +33,10 @@ const DEFAULT_ADMIN_ROLE =
 const MINTER_ROLE =
   "0xf0887ba65ee2024ea881d91b74c2450ef19e1557f03bed3ea9f16b037cbe2dc9";
 
-// Defaults
+// Known addresses
+const OP_D3SERVE = "0x01bf7f00540988622a32de1089b7dea09a867188"; // op.d3serve.eth — ProxyAdmin owner (hardcoded in CREATE2 initcode)
 const NAMEFIDAO = "0x1b0f291c8fFebE891886351CDfF8A304a840C8Ad"; // namefidao.eth — Tester Admin
+const MAINNET_ADMIN = "0xEe15C2735eD48C80f50fe666b45fE9ec699daEE5"; // Mainnet NamefiNFT admin
 
 const NFT_IFACE = new ethers.utils.Interface([
   "function initialize()",
@@ -57,6 +62,7 @@ async function sendTx(
   to: string,
   data: string,
   label: string,
+  gasPrice: import("ethers").BigNumber,
   confirmations: number = 2
 ) {
   console.log(`\n  → ${label}`);
@@ -68,6 +74,7 @@ async function sendTx(
     to,
     data,
     gasLimit: 8_000_000,
+    gasPrice,
   });
   console.log(`    TX Hash: ${tx.hash}`);
 
@@ -98,15 +105,26 @@ async function verifyContractDeployed(address: string, label: string) {
 
 async function main() {
   const chainId = (await ethers.provider.getNetwork()).chainId;
+  const networkUrl = (network.config as any).url || "in-process hardhat node";
+  const gasPrice = await ethers.provider.getGasPrice();
   console.log(`\n${"=".repeat(70)}`);
   console.log("NamefiNFT Robinhood Testnet Deployment");
+  console.log(`Network: ${network.name}`);
   console.log(`Chain ID: ${chainId}`);
-  console.log(`RPC: ${ethers.provider.connection.url}`);
+  console.log(`RPC: ${networkUrl}`);
+  console.log(`Gas Price: ${ethers.utils.formatUnits(gasPrice, "gwei")} gwei`);
   console.log(`${"=".repeat(70)}`);
+
+  if (network.name !== "robinhood_testnet") {
+    throw new Error(
+      `Wrong network! Expected "robinhood_testnet", got "${network.name}". ` +
+      `Use: hardhat run --network robinhood_testnet scripts/deploy-robinhood-testnet.ts`
+    );
+  }
 
   if (chainId !== 46630) {
     throw new Error(
-      `Wrong network! Expected chain 46630, got ${chainId}. Use --network robinhood_testnet`
+      `Wrong chain ID! Expected 46630, got ${chainId}. Check robinhood_testnet config.`
     );
   }
 
@@ -122,22 +140,27 @@ async function main() {
   const balanceEth = ethers.utils.formatEther(balance);
 
   console.log(`\nDeployer Address: ${signerAddr}`);
-  console.log(`Expected Address: ${NAMEFIDAO}`);
 
-  // Verify signer matches expected address
-  if (signerAddr.toLowerCase() !== NAMEFIDAO.toLowerCase()) {
+  // Verify signer is op.d3serve.eth (required for ProxyAdmin.upgrade in step 1e)
+  if (signerAddr.toLowerCase() !== OP_D3SERVE.toLowerCase()) {
     throw new Error(
-      `Signer mismatch! Expected ${NAMEFIDAO}, got ${signerAddr}. ` +
-      `Check your MNEMONIC — the account at index 0 should be ${NAMEFIDAO}`
+      `Signer mismatch! Expected op.d3serve.eth (${OP_D3SERVE}), got ${signerAddr}. ` +
+      `The deployer must be op.d3serve.eth because it is the ProxyAdmin owner (hardcoded in CREATE2 initcode).`
     );
   }
-  console.log(`✓ Signer matches expected address`);
+  console.log(`✓ Signer is op.d3serve.eth (ProxyAdmin owner)`);
 
   console.log(`Balance: ${balanceEth} ETH`);
 
-  if (balance.lt(ethers.utils.parseEther("1"))) {
+  // Estimate required balance: ~9M gas total with 50% buffer
+  const ESTIMATED_TOTAL_GAS = 9_000_000;
+  const requiredBalance = gasPrice.mul(ESTIMATED_TOTAL_GAS).mul(150).div(100);
+  const requiredEth = ethers.utils.formatEther(requiredBalance);
+  console.log(`Estimated cost (with 50% buffer): ${requiredEth} ETH`);
+
+  if (balance.lt(requiredBalance)) {
     throw new Error(
-      `Insufficient balance! Need at least 1 ETH for gas, have ${balanceEth}`
+      `Insufficient balance! Need at least ${requiredEth} ETH for gas, have ${balanceEth}`
     );
   }
 
@@ -154,60 +177,25 @@ async function main() {
 
   // 1a: Deploy original impl
   const step1a = deployTxJson.steps[0];
-  await sendTx(signer, NICK_DEPLOYER, step1a.data, "1a: Deploy NamefiNFT original impl", CONFIRMATIONS);
+  await sendTx(signer, NICK_DEPLOYER, step1a.data, "1a: Deploy NamefiNFT original impl", gasPrice, CONFIRMATIONS);
   await verifyContractDeployed(IMPL_ORIG, "IMPL_ORIG");
 
   // 1b: Deploy ProxyAdmin
   const step1b = deployTxJson.steps[1];
-  await sendTx(signer, NICK_DEPLOYER, step1b.data, "1b: Deploy ProxyAdmin", CONFIRMATIONS);
+  await sendTx(signer, NICK_DEPLOYER, step1b.data, "1b: Deploy ProxyAdmin", gasPrice, CONFIRMATIONS);
   await verifyContractDeployed(PROXY_ADMIN, "PROXY_ADMIN");
 
-  // 1b-post: Transfer ProxyAdmin ownership to TARGET_ADMIN if signer is not TARGET_ADMIN
-  if (signerAddr.toLowerCase() !== TARGET_ADMIN.toLowerCase()) {
-    console.log(
-      `\n  Note: Signer is ${signerAddr}, TARGET_ADMIN is ${TARGET_ADMIN}`
-    );
-    console.log(`  ProxyAdmin owner must be changed to TARGET_ADMIN`);
-
-    // Check current owner
-    const currentOwner = await ethers.provider.call({
-      to: PROXY_ADMIN,
-      data: PROXY_ADMIN_IFACE.encodeFunctionData("owner"),
-    });
-    const ownerAddr = PROXY_ADMIN_IFACE.decodeFunctionResult("owner", currentOwner)[0];
-    console.log(`  Current ProxyAdmin owner: ${ownerAddr}`);
-
-  if (ownerAddr.toLowerCase() === signerAddr.toLowerCase()) {
-      const transferOwnershipCalldata = PROXY_ADMIN_IFACE.encodeFunctionData(
-        "transferOwnership",
-        [TARGET_ADMIN]
-      );
-      await sendTx(
-        signer,
-        PROXY_ADMIN,
-        transferOwnershipCalldata,
-        "1b-post: transferOwnership to TARGET_ADMIN",
-        CONFIRMATIONS
-      );
-    } else {
-      console.log(
-        `  ⚠ ProxyAdmin owner is ${ownerAddr}, not the signer. Cannot transfer ownership.`
-      );
-      console.log(`  If ${ownerAddr} is a multisig or different account, manually call:`);
-      console.log(
-        `    proxyAdmin.transferOwnership("${TARGET_ADMIN}")`
-      );
-    }
-  }
+  // Note: No ownership transfer needed — op.d3serve.eth is already the
+  // ProxyAdmin owner (hardcoded in CREATE2 initcode).
 
   // 1c: Deploy NFT Proxy
   const step1c = deployTxJson.steps[2];
-  await sendTx(signer, NICK_DEPLOYER, step1c.data, "1c: Deploy NamefiNFT Proxy", CONFIRMATIONS);
+  await sendTx(signer, NICK_DEPLOYER, step1c.data, "1c: Deploy NamefiNFT Proxy", gasPrice, CONFIRMATIONS);
   await verifyContractDeployed(PROXY, "PROXY");
 
   // 1d: Deploy v1.4.0 impl
   const step1d = deployTxJson.steps[3];
-  await sendTx(signer, NICK_DEPLOYER, step1d.data, "1d: Deploy NamefiNFT v1.4.0 impl", CONFIRMATIONS);
+  await sendTx(signer, NICK_DEPLOYER, step1d.data, "1d: Deploy NamefiNFT v1.4.0 impl", gasPrice, CONFIRMATIONS);
   await verifyContractDeployed(IMPL_V140, "IMPL_V140");
 
   // 1e: Upgrade proxy to v1.4.0
@@ -217,6 +205,7 @@ async function main() {
     PROXY_ADMIN,
     step1e.data,
     "1e: Upgrade proxy to v1.4.0",
+    gasPrice,
     CONFIRMATIONS
   );
 
@@ -235,7 +224,7 @@ async function main() {
   }
   console.log(`    ✓ Impl slot correct`);
 
-  // 1f: Multicall3 — initialize + grant to TARGET_ADMIN + revoke from Multicall3 (atomic)
+  // 1f: Multicall3 — initialize + grant to TARGET_ADMIN & MAINNET_ADMIN + revoke from Multicall3 (atomic)
   const mc3Calldata = MC3_IFACE.encodeFunctionData("aggregate3", [
     [
       {
@@ -262,6 +251,39 @@ async function main() {
       {
         target: PROXY,
         allowFailure: false,
+        callData: NFT_IFACE.encodeFunctionData("grantRole", [
+          DEFAULT_ADMIN_ROLE,
+          MAINNET_ADMIN,
+        ]),
+      },
+      {
+        target: PROXY,
+        allowFailure: false,
+        callData: NFT_IFACE.encodeFunctionData("grantRole", [
+          MINTER_ROLE,
+          MAINNET_ADMIN,
+        ]),
+      },
+      // Grant deployer (op.d3serve.eth) both roles so it can manage roles & mint in TX2
+      {
+        target: PROXY,
+        allowFailure: false,
+        callData: NFT_IFACE.encodeFunctionData("grantRole", [
+          DEFAULT_ADMIN_ROLE,
+          OP_D3SERVE,
+        ]),
+      },
+      {
+        target: PROXY,
+        allowFailure: false,
+        callData: NFT_IFACE.encodeFunctionData("grantRole", [
+          MINTER_ROLE,
+          OP_D3SERVE,
+        ]),
+      },
+      {
+        target: PROXY,
+        allowFailure: false,
         callData: NFT_IFACE.encodeFunctionData("revokeRole", [
           MINTER_ROLE,
           MULTICALL3,
@@ -282,6 +304,7 @@ async function main() {
     MULTICALL3,
     mc3Calldata,
     "1f: Multicall3 — init + grant TARGET_ADMIN + revoke Multicall3 (atomic)",
+    gasPrice,
     CONFIRMATIONS
   );
 
@@ -372,36 +395,29 @@ async function main() {
     `  Multicall3 has MINTER_ROLE: ${!mc3HasMinterBool ? "✓ REVOKED" : "✗ STILL HAS"}`
   );
 
-  if (!hasAdminBool || !hasMinterBool || mc3HasAdminBool || mc3HasMinterBool) {
+  // Check deployer (op.d3serve.eth) roles
+  const deployerHasAdmin = await ethers.provider.call({
+    to: PROXY,
+    data: NFT_IFACE.encodeFunctionData("hasRole", [DEFAULT_ADMIN_ROLE, OP_D3SERVE]),
+  });
+  const deployerHasAdminBool =
+    NFT_IFACE.decodeFunctionResult("hasRole", deployerHasAdmin)[0];
+  console.log(
+    `  op.d3serve.eth has DEFAULT_ADMIN_ROLE: ${deployerHasAdminBool ? "✓ YES" : "✗ NO"}`
+  );
+
+  const deployerHasMinter = await ethers.provider.call({
+    to: PROXY,
+    data: NFT_IFACE.encodeFunctionData("hasRole", [MINTER_ROLE, OP_D3SERVE]),
+  });
+  const deployerHasMinterBool =
+    NFT_IFACE.decodeFunctionResult("hasRole", deployerHasMinter)[0];
+  console.log(
+    `  op.d3serve.eth has MINTER_ROLE: ${deployerHasMinterBool ? "✓ YES" : "✗ NO"}`
+  );
+
+  if (!hasAdminBool || !hasMinterBool || !deployerHasAdminBool || !deployerHasMinterBool || mc3HasAdminBool || mc3HasMinterBool) {
     throw new Error("TX1 post-state verification failed!");
-  }
-
-  // If signer is not TARGET_ADMIN, grant MINTER_ROLE to signer so they can mint in TX2
-  let signerCanMint = hasMinterBool && signerAddr.toLowerCase() === TARGET_ADMIN.toLowerCase();
-  if (!signerCanMint) {
-    const signerHasMinter = await ethers.provider.call({
-      to: PROXY,
-      data: NFT_IFACE.encodeFunctionData("hasRole", [MINTER_ROLE, signerAddr]),
-    });
-    const signerHasMinterBool =
-      NFT_IFACE.decodeFunctionResult("hasRole", signerHasMinter)[0];
-
-    if (!signerHasMinterBool) {
-      console.log(
-        `\n  ⚠ Signer does not have MINTER_ROLE. Granting MINTER_ROLE to signer for TX2...`
-      );
-      const grantMinterCalldata = NFT_IFACE.encodeFunctionData("grantRole", [
-        MINTER_ROLE,
-        signerAddr,
-      ]);
-      await sendTx(
-        signer,
-        PROXY,
-        grantMinterCalldata,
-        "1f-extra: Grant MINTER_ROLE to signer (for TX2)",
-        CONFIRMATIONS
-      );
-    }
   }
 
   // ── TX2: Mint example.com ────────────────────────────────────────
@@ -418,6 +434,7 @@ async function main() {
     PROXY,
     mintCalldata,
     "TX2: safeMintByNameNoCharge('example.com')",
+    gasPrice,
     CONFIRMATIONS
   );
 
