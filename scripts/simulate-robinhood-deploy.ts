@@ -19,10 +19,25 @@ const PROXY_ADMIN   = "0x00000000009209F45C2822E3f11b7a73014130F1";
 const PROXY         = "0x0000000000cf80E7Cf8Fa4480907f692177f8e06";
 const IMPL_ORIG     = "0x00000000f34FA72595f0B1FA90718Cdd865D6d44";
 const IMPL_V140     = "0x00008eea299efc29d7bdafec0465feaa828064fa";
+const MULTICALL3    = "0xcA11bde05977b3631167028862bE2a173976CA11";
+
+const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
+const MINTER_ROLE        = "0xf0887ba65ee2024ea881d91b74c2450ef19e1557f03bed3ea9f16b037cbe2dc9";
 
 // TX senders
-const NAMEFIDAO     = "0x1b0f291c8fFebE891886351CDfF8A304a840C8Ad"; // namefidao.eth — calls init + mint
-const PA_OWNER      = "0x01Bf7f00540988622a32de1089B7DeA09a867188"; // op.d3serve.eth — calls upgrade
+const NAMEFIDAO = "0x1b0f291c8fFebE891886351CDfF8A304a840C8Ad"; // namefidao.eth — Tester Admin
+const PA_OWNER  = "0x01Bf7f00540988622a32de1089B7DeA09a867188"; // op.d3serve.eth — transfers ProxyAdmin ownership
+
+const NFT_IFACE = new ethers.utils.Interface([
+  "function initialize()",
+  "function grantRole(bytes32 role, address account)",
+  "function revokeRole(bytes32 role, address account)",
+  "function hasRole(bytes32 role, address account) view returns (bool)",
+]);
+
+const MC3_IFACE = new ethers.utils.Interface([
+  "function aggregate3(tuple(address target, bool allowFailure, bytes callData)[] calls) payable returns (tuple(bool success, bytes returnData)[])",
+]);
 
 async function impersonate(address: string) {
   await network.provider.request({ method: "hardhat_impersonateAccount", params: [address] });
@@ -93,9 +108,17 @@ async function main() {
   ]).encodeFunctionData("upgrade", [PROXY, IMPL_V140]);
   await sendRaw(namefidao, PROXY_ADMIN, upgradeCalldata, "1e: Upgrade proxy to v1.4.0 (from namefidao.eth)");
 
-  // 1f: Initialize proxy (msg.sender becomes admin+minter)
-  const initCalldata = "0x8129fc1c"; // initialize()
-  await sendRaw(namefidao, PROXY, initCalldata, "1f: Initialize proxy (namefidao.eth gets admin+minter)");
+  // 1f: Multicall3 — initialize + grant namefidao.eth both roles + revoke Multicall3's own roles (atomic)
+  // Multicall3's msg.sender becomes admin after initialize(), so we must grant to namefidao.eth
+  // and revoke from Multicall3 atomically — revoke MINTER_ROLE before DEFAULT_ADMIN_ROLE
+  const mc3Calldata = MC3_IFACE.encodeFunctionData("aggregate3", [[
+    { target: PROXY, allowFailure: false, callData: NFT_IFACE.encodeFunctionData("initialize") },
+    { target: PROXY, allowFailure: false, callData: NFT_IFACE.encodeFunctionData("grantRole", [DEFAULT_ADMIN_ROLE, NAMEFIDAO]) },
+    { target: PROXY, allowFailure: false, callData: NFT_IFACE.encodeFunctionData("grantRole", [MINTER_ROLE, NAMEFIDAO]) },
+    { target: PROXY, allowFailure: false, callData: NFT_IFACE.encodeFunctionData("revokeRole", [MINTER_ROLE, MULTICALL3]) },
+    { target: PROXY, allowFailure: false, callData: NFT_IFACE.encodeFunctionData("revokeRole", [DEFAULT_ADMIN_ROLE, MULTICALL3]) },
+  ]]);
+  await sendRaw(namefidao, MULTICALL3, mc3Calldata, "1f: Multicall3 — init + grant namefidao.eth + revoke Multicall3 (atomic)");
 
   // ── Verify TX1 post-state ─────────────────────────────────────────
   console.log("\n[TX1 Post-State Verification]");
@@ -122,34 +145,26 @@ async function main() {
   const nft = new ethers.Contract(PROXY, [
     "function hasRole(bytes32 role, address account) view returns (bool)"
   ], ethers.provider);
-  const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
-  const MINTER_ROLE = "0xf0887ba65ee2024ea881d91b74c2450ef19e1557f03bed3ea9f16b037cbe2dc9";
   const hasAdmin  = await nft.hasRole(DEFAULT_ADMIN_ROLE, NAMEFIDAO);
   const hasMinter = await nft.hasRole(MINTER_ROLE, NAMEFIDAO);
   console.log(`  namefidao.eth has DEFAULT_ADMIN_ROLE: ${hasAdmin ? "✓ PASS" : "✗ FAIL"}`);
   console.log(`  namefidao.eth has MINTER_ROLE:        ${hasMinter ? "✓ PASS" : "✗ FAIL"}`);
+  const mc3HasAdmin  = await nft.hasRole(DEFAULT_ADMIN_ROLE, MULTICALL3);
+  const mc3HasMinter = await nft.hasRole(MINTER_ROLE, MULTICALL3);
+  console.log(`  Multicall3 has DEFAULT_ADMIN_ROLE: ${!mc3HasAdmin ? "✓ PASS (revoked)" : "✗ FAIL (still holds admin!)"}`);
+  console.log(`  Multicall3 has MINTER_ROLE:        ${!mc3HasMinter ? "✓ PASS (revoked)" : "✗ FAIL (still holds minter!)"}`);
 
-  // ── TX2: grantRole (explicit, though already granted by initialize) ──
-  console.log("\n[TX2] grantRole(DEFAULT_ADMIN_ROLE, namefidao.eth)");
-  console.log("─".repeat(40));
-  const grantCalldata = new ethers.utils.Interface([
-    "function grantRole(bytes32 role, address account)"
-  ]).encodeFunctionData("grantRole", [DEFAULT_ADMIN_ROLE, NAMEFIDAO]);
-  await sendRaw(namefidao, PROXY, grantCalldata, "TX2: grantRole DEFAULT_ADMIN_ROLE to namefidao.eth");
-  const hasAdminAfter = await nft.hasRole(DEFAULT_ADMIN_ROLE, NAMEFIDAO);
-  console.log(`  DEFAULT_ADMIN_ROLE confirmed: ${hasAdminAfter ? "✓ PASS" : "✗ FAIL"}`);
-
-  // ── TX3: Mint example.com ─────────────────────────────────────────
-  console.log("\n[TX3] Mint 'example.com' NFT");
+  // ── TX2: Mint example.com ────────────────────────────────────────
+  console.log("\n[TX2] Mint 'example.com' NFT");
   console.log("─".repeat(40));
   const expiry = 1893456000; // 2030-01-01
   const mintCalldata = new ethers.utils.Interface([
     "function safeMintByNameNoCharge(address to, string memory domainName, uint256 expirationTime)"
   ]).encodeFunctionData("safeMintByNameNoCharge", [NAMEFIDAO, "example.com", expiry]);
-  const mintReceipt = await sendRaw(namefidao, PROXY, mintCalldata, "TX3: safeMintByNameNoCharge('example.com')");
+  const mintReceipt = await sendRaw(namefidao, PROXY, mintCalldata, "TX2: safeMintByNameNoCharge('example.com')");
 
-  // ── Verify TX3 post-state ─────────────────────────────────────────
-  console.log("\n[TX3 Post-State Verification]");
+  // ── Verify TX2 post-state ─────────────────────────────────────────
+  console.log("\n[TX2 Post-State Verification]");
   console.log("─".repeat(40));
 
   const nftFull = new ethers.Contract(PROXY as string, [
