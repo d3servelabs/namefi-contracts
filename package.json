@@ -29,9 +29,7 @@
   "license": "Apache-2.0+",
   "homepage": "https://namefi.io",
   "devDependencies": {
-    "@ensdomains/ens-contracts": "^0.0.20",
-    "@ercref/contracts": "^0.1.0",
-    "@ethersproject/abi": "^5.4.7",
+"@ethersproject/abi": "^5.4.7",
     "@ethersproject/providers": "^5.4.7",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.3",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.6",
